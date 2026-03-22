@@ -61,6 +61,22 @@ def readme_path(root: str) -> str:
     return p if os.path.isfile(p) else ""
 
 
+ALL_FD_IDS: tuple[str, ...] = ("FD001", "FD002", "FD003", "FD004")
+
+
+def list_available_datasets(root: str) -> list[str]:
+    """FD ids that have at least one of train_FD00x.txt or test_FD00x.txt under root."""
+    if not root or not os.path.isdir(root):
+        return []
+    found: list[str] = []
+    for fd in ALL_FD_IDS:
+        if os.path.isfile(cmapss_file(root, "train", fd)) or os.path.isfile(
+            cmapss_file(root, "test", fd)
+        ):
+            found.append(fd)
+    return found
+
+
 def load_cmapss_table(path: str) -> pd.DataFrame:
     if not os.path.isfile(path):
         raise FileNotFoundError(path)

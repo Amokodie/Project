@@ -20,6 +20,7 @@ from analysis_pdf import build_cmapss_brief_pdf
 from cmapss_data import (
     cmapss_file,
     default_local_test_path,
+    list_available_datasets,
     load_cmapss_table,
     load_rul,
     load_test_fd001,
@@ -452,17 +453,35 @@ def main():
             value=default_root,
             help="Folder containing train_FD00x.txt, test_FD00x.txt, RUL_FD00x.txt",
         ).strip()
-        fd = st.selectbox("Dataset", ["FD001", "FD002", "FD003", "FD004"], index=0)
-        train_df, test_df, rul, train_path, test_path, rul_path = _load_cmapss_bundle(root, fd)
-
-        if train_df is None and test_df is None:
-            st.warning("Files not found at that path — using local synthetic demo.")
-            test_df = load_test_fd001(default_local_test_path())
-            train_df = None
-            rul = None
-            data_root_label = os.path.dirname(default_local_test_path())
+        available_fd = list_available_datasets(root)
+        st.caption(
+            "Only datasets with **train_*.txt** or **test_*.txt** in this folder are listed. "
+            "On **Streamlit Cloud**, you must **commit** those files into the repo `data/` folder."
+        )
+        if available_fd:
+            fd = st.selectbox("Dataset", available_fd, index=0)
+            train_df, test_df, rul, train_path, test_path, rul_path = _load_cmapss_bundle(root, fd)
+            if train_df is None and test_df is None:
+                st.error("Files disappeared or could not be read. Check permissions and paths.")
+                test_df = load_test_fd001(default_local_test_path())
+                train_df = None
+                rul = None
+                data_root_label = os.path.dirname(default_local_test_path())
+            else:
+                data_root_label = root
         else:
-            data_root_label = root
+            st.warning(
+                "**No NASA files** found in that folder (no `train_FD00x.txt` / `test_FD00x.txt`). "
+                "Copy your CMAPSS **CMAPSSData** files here, or on GitHub add them under **`data/`** and redeploy."
+            )
+            fd = "FD001"
+            train_df, test_df, rul = None, None, None
+            train_path = cmapss_file(root, "train", fd)
+            test_path = cmapss_file(root, "test", fd)
+            rul_path = rul_file(root, fd)
+            st.info("Showing **synthetic FD001-style** demo data until real files are available.")
+            test_df = load_test_fd001(default_local_test_path())
+            data_root_label = os.path.dirname(default_local_test_path())
 
         split = st.radio("Fleet trajectories use", ["test", "train"], horizontal=True, index=0)
         df_fleet = test_df if split == "test" else train_df

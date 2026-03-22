@@ -31,8 +31,9 @@ I cannot log into your accounts for you. Use **Streamlit Community Cloud** (free
 
 ## Data on the cloud
 
-- The hosted machine **does not** have your `E:\` drive. The app falls back to the **`data/`** folder in the repo (sample `test_FD001.txt`) or synthetic data.
-- To use full FD001–FD004 files on the web, you would need to **commit** those text files (if size/policy allows) or add **file upload** / remote storage later.
+- The hosted machine **does not** have your `E:\` drive. The app reads only what you **commit** under the repo’s **`data/`** folder (same layout as NASA: `train_FD00x.txt`, `test_FD00x.txt`, `RUL_FD00x.txt`).
+- The dropdown **only lists datasets that exist** in that folder. If you only committed `test_FD001.txt`, only **FD001** appears—**FD002–FD004** are not magic; you must add those files to `data/` and **push** to GitHub, then redeploy.
+- GitHub warns above **100 MB per file**; the NASA text files are usually fine, but check repo size limits for your account.
 
 ## Optional: secrets
 
