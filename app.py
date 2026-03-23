@@ -23,8 +23,8 @@ from plotly.subplots import make_subplots
 from analysis_pdf import build_cmapss_brief_pdf
 from cnn_pinn_lab import (
     fig_loss_components_bar,
-    fig_radar_cnn_vs_pinn,
-    fig_sensor_window_vs_physics,
+    fig_radar_three_way,
+    fig_sensor_window_physics_attention,
     fig_training_loss_curves,
 )
 from cmapss_data import (
@@ -57,7 +57,7 @@ from eda_charts import (
     non_constant_sensors,
     sensor_columns,
 )
-from ui_theme import hero_engineering_ribbon, inject_engineering_theme
+from ui_theme import hero_engineering_ribbon, inject_engineering_theme, plotly_template
 
 st.set_page_config(
     page_title="C-MAPSS PHM Dashboard",
@@ -146,7 +146,7 @@ def render_authors_banner():
 
 def pillar_intro():
     st.title("NASA C-MAPSS Turbofan Engine — PHM Dashboard")
-    hero_engineering_ribbon()
+    hero_engineering_ribbon(st.session_state.get("ui_theme", "dark"))
     render_authors_banner()
     st.markdown(
         """
@@ -512,23 +512,31 @@ flowchart TD
 
 
 def tab_cnn_pinn_lab():
-    st.subheader("CNN vs PINN — PHM deep learning view")
+    tpl = plotly_template(st.session_state.get("ui_theme", "dark"))
+    st.subheader("Deep learning lab — CNN · Transformer · PINN")
     st.markdown(
         """
-This tab is a **technical briefing** for turbofan RUL: how a **convolutional** time-series model differs from a **physics-informed**
-neural network (PINN) when you embed degradation structure. Numbers and curves are **illustrative** unless you plug in your own training logs.
+**Turbofan RUL** can be approached with **1D convolutions** (local cycles), **Transformers** (global attention over a sequence of sensor snapshots),
+or **PINNs** (supervised fit + physics / wear residuals). Curves and radars are **illustrative**—swap in your own training logs when available.
         """
     )
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("CNN window", "Local receptive field", "sliding cycles")
-    k2.metric("PINN prior", "Residual + data", "physics loss")
-    k3.metric("FD004", "Multi-regime", "CNN favors data")
-    k4.metric("PINN edge", "Few labels", "structure helps")
+    k1, k2, k3, k4, k5 = st.columns(5)
+    k1.metric("1D-CNN", "Local windows", "fast inference")
+    k2.metric("Transformer", "Self-attention", "long context")
+    k3.metric("PINN", "Physics loss", "fewer labels?")
+    k4.metric("FD004", "Multi-regime", "data-hungry")
+    k5.metric("KV cache", "Transformer", "see Compute tab")
 
-    st.markdown("#### Loss formulations (compact)")
+    st.markdown("#### Loss sketches (compact)")
     st.latex(
         r"""
         \mathcal{L}_{\text{CNN}} = \frac{1}{N}\sum_i \bigl( \hat{y}_i - y_i \bigr)^2 + \lambda \lVert W \rVert_2^2
+        """
+    )
+    st.latex(
+        r"""
+        \mathcal{L}_{\text{Trans}} \approx \sum_i \bigl( \hat{y}_i - y_i \bigr)^2
+        + \beta \sum_{l,h,i,j} \mathrm{Attn}_{h,l}(i,j)^2 \quad \text{(optional attention regularizer)}
         """
     )
     st.latex(
@@ -539,37 +547,42 @@ neural network (PINN) when you embed degradation structure. Numbers and curves a
         """
     )
     st.caption(
-        "Symbols: $s$ sensors, $w$ wear proxy, $f_{\text{wear}}$ an exponential or power-law prior; "
-        "exact forms depend on your physics model."
+        "Attention: many RUL papers use **MSE on RUL head only**; extra terms are optional priors. "
+        "PINN: $s$ sensors, $w$ wear proxy, $f_{\text{wear}}$ from physics literature."
     )
 
-    st.markdown("#### Illustrative training dynamics")
-    st.plotly_chart(fig_training_loss_curves(), use_container_width=True)
+    st.markdown("#### Illustrative training dynamics (three families)")
+    st.plotly_chart(fig_training_loss_curves(template=tpl), use_container_width=True)
 
     r1, r2 = st.columns(2)
     with r1:
-        st.plotly_chart(fig_radar_cnn_vs_pinn(), use_container_width=True)
+        st.plotly_chart(fig_radar_three_way(template=tpl), use_container_width=True)
     with r2:
-        st.plotly_chart(fig_loss_components_bar(), use_container_width=True)
+        st.plotly_chart(fig_loss_components_bar(template=tpl), use_container_width=True)
 
-    st.markdown("#### Intuition plots — local convolution vs global physics channel")
-    st.plotly_chart(fig_sensor_window_vs_physics(), use_container_width=True)
+    st.markdown("#### Intuition — convolution vs attention vs wear channel")
+    st.plotly_chart(fig_sensor_window_physics_attention(template=tpl), use_container_width=True)
 
+    mm_theme = "neutral" if st.session_state.get("ui_theme", "dark") == "light" else "dark"
     mermaid = """
 flowchart LR
-    subgraph CNN[1D-CNN / temporal conv]
-        W[Sliding windows] --> C[Conv stacks]
-        C --> P[Pooling]
-        P --> H[Dense RUL head]
+    subgraph CNN[1D-CNN]
+        W[Windows] --> C[Conv]
+        C --> H[RUL head]
     end
-    subgraph PINN[PINN-style hybrid]
-        S[Sensors] --> N[Network]
-        N --> R[Residual / wear]
+    subgraph TR[Temporal Transformer]
+        T[Tokenize cycles] --> A[Self-attention]
+        A --> H2[RUL head]
+    end
+    subgraph PINN[PINN-style]
+        S[Sensors] --> N[Net]
+        N --> R[Wear residual]
         R --> L[Total loss]
         S --> L
     end
-    CNN -->|needs coverage| FD4[FD004 regimes]
-    PINN -->|fewer labels| FD1[Sparse fleets]
+    CNN --> FD[FD001–FD004]
+    TR --> FD
+    PINN --> FD
     """
     st.markdown("#### Architecture flow (qualitative)")
     components.html(
@@ -579,18 +592,19 @@ flowchart LR
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head><body>
 <div class="mermaid">{mermaid}</div>
-<script>mermaid.initialize({{startOnLoad:true, theme:'dark'}});</script>
+<script>mermaid.initialize({{startOnLoad:true, theme:'{mm_theme}'}});</script>
 </body></html>
         """,
-        height=320,
+        height=340,
     )
 
     with st.expander("Implementation checklist (for your assignment code)", expanded=False):
         st.markdown(
             r"""
-- **CNN baseline:** normalize per engine; build **fixed-length windows**; 1D conv → GAP → RUL regression; report RMSE on test RUL.  
-- **PINN-style:** add a **wear state** or map sensors to a residual; balance $\lambda$ with a validation curve; compare against CNN with **matched parameter budget**.  
-- **Fairness:** same seed, same train/val split, **quantization** optional for edge story in the “Compute” tab.
+- **CNN:** per-engine normalization → sliding windows → 1D conv backbone → RUL regression; RMSE vs `RUL_FD00x.txt`.  
+- **Transformer:** stack **L** cycles as a sequence (or patch embeddings); encoder-only or encoder–decoder; watch **KV cache** length on edge.  
+- **PINN-style:** supervised term + **wear / residual**; tune $\lambda$ on a validation engine set.  
+- **Fairness:** same splits/seeds; compare **parameter count** or **latency** fairly (see **Compute** tab).
             """
         )
 
@@ -651,11 +665,21 @@ def tab_compute():
 
 
 def main():
-    inject_engineering_theme()
-    pillar_intro()
+    if "ui_theme" not in st.session_state:
+        st.session_state.ui_theme = "dark"
 
     default_root = resolve_cmapss_root()
     with st.sidebar:
+        st.radio(
+            "Appearance",
+            ["Dark", "Light"],
+            horizontal=True,
+            key="theme_ap",
+            index=0 if st.session_state.ui_theme == "dark" else 1,
+        )
+        st.session_state.ui_theme = "dark" if st.session_state.theme_ap == "Dark" else "light"
+        st.caption("NASA C-MAPSS · turbofan PHM")
+        st.divider()
         with st.expander("Authors & institution", expanded=False):
             c_a, c_b = st.columns(2)
             with c_a:
@@ -726,6 +750,12 @@ def main():
         st.divider()
         st.markdown("**Install:** `pip install -r requirements.txt`  \\n**Run:** `streamlit run app.py`")
         st.caption("Override path with env `CMAPSS_DATA_DIR` if you prefer.")
+        st.divider()
+        st.metric("Rows (fleet table)", f"{len(df_fleet):,}")
+        st.metric("Engines (fleet table)", f"{df_fleet['unit'].nunique()}")
+
+    inject_engineering_theme(st.session_state.ui_theme)
+    pillar_intro()
 
     section_downloads(data_root_label, fd, train_df, test_df, rul)
 
@@ -743,7 +773,7 @@ def main():
             "Exploratory analysis",
             "Data audit report",
             "Architecture selection",
-            "CNN vs PINN lab",
+            "Deep learning lab",
             "Compute & deployment",
         ]
     )
@@ -759,11 +789,6 @@ def main():
         tab_cnn_pinn_lab()
     with tab6:
         tab_compute()
-
-    with st.sidebar:
-        st.divider()
-        st.metric("Rows (fleet table)", f"{len(df_fleet):,}")
-        st.metric("Engines (fleet table)", f"{df_fleet['unit'].nunique()}")
 
 
 if __name__ == "__main__":
