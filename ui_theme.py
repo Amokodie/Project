@@ -1,63 +1,68 @@
-"""Aerospace / turbofan accents + Dark/Light. Main area must stay transparent so .stApp background shows."""
+"""Clean solid backgrounds for Dark/Light; transparent main stack so the app shell color shows."""
 
 from __future__ import annotations
 
 import streamlit as st
 
-
-def _svg_turbofan_corner(for_light: bool) -> str:
-    """Slightly visible engine motif — bottom-right."""
-    stroke = "%23475569" if for_light else "%2338bdf8"
-    op = "0.16" if for_light else "0.14"
-    return (
-        "%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='320' viewBox='0 0 420 320'%3E"
-        f"%3Cg fill='none' stroke='{stroke}' stroke-opacity='{op}' stroke-width='1.2'%3E"
-        "%3Cellipse cx='210' cy='160' rx='88' ry='88'/%3E"
-        "%3Cellipse cx='210' cy='160' rx='24' ry='88'/%3E"
-        "%3Cline x1='120' y1='160' x2='300' y2='160'/%3E"
-        "%3Cline x1='290' y1='100' x2='290' y2='220'/%3E"
-        "%3Cline x1='310' y1='115' x2='310' y2='205'/%3E"
-        "%3Cline x1='330' y1='125' x2='330' y2='195'/%3E"
-        "%3Cpath d='M 40 160 Q 80 120 120 160 Q 80 200 40 160'/%3E"
-        "%3C/g%3E"
-        "%3C/svg%3E"
-    )
+# Match .streamlit/config.toml backgroundColor for dark (avoids Streamlit vs custom mismatch).
+_BG_DARK = "#0c1118"
+_BG_LIGHT = "#f1f5f9"
 
 
 def inject_engineering_theme(mode: str = "dark") -> None:
     """
-    Streamlit paints the MAIN column with a solid theme color — that hides .stApp background.
-    We set .stApp to the full scene (gradient + motif) and force main blocks to transparent.
+    Streamlit paints inner containers from [theme]; we set the shell to a flat color and
+    force main blocks transparent so the same fill is visible in Dark and Light.
     """
     light = mode == "light"
-    svg = _svg_turbofan_corner(light)
+
+    common_transparent = """
+  [data-testid="stAppViewContainer"] {
+    background: transparent !important;
+  }
+  section[data-testid="stMain"] > div {
+    background: transparent !important;
+  }
+  section[data-testid="stMain"] {
+    background: transparent !important;
+  }
+  .stApp .main {
+    background: transparent !important;
+  }
+  .main > div {
+    background: transparent !important;
+  }
+  section[data-testid="stMain"] .block-container {
+    background: transparent !important;
+  }
+  section[data-testid="stMain"] [class*="block-container"] {
+    background: transparent !important;
+  }
+  section[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {
+    background: transparent !important;
+  }
+  section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
+    background: transparent !important;
+  }
+"""
 
     if light:
-        # Soft cool-gray page + faint blue wash + motif
-        bg_core = "#eef1f5"
+        bg = _BG_LIGHT
         fg = "#0f172a"
         fg_muted = "#334155"
         fg_soft = "#475569"
-        grad = (
-            "radial-gradient(ellipse 90% 55% at 50% -15%, rgba(59, 130, 246, 0.12) 0%, transparent 55%), "
-            "linear-gradient(180deg, #f8fafc 0%, #eef1f5 45%, #e8edf3 100%)"
-        )
-        # config.toml keeps [theme] textColor for *dark*; in-app Light must override Streamlit tokens + widgets.
         app_css = f"""
   html {{
     color-scheme: light !important;
   }}
   html, body {{
-    background-color: {bg_core} !important;
+    background-color: {bg} !important;
     color: {fg} !important;
   }}
   .stApp {{
-    background-color: {bg_core} !important;
-    background-image: {grad}, url("data:image/svg+xml,{svg}") !important;
-    background-repeat: no-repeat, no-repeat !important;
-    background-position: center top, right -36px bottom -28px !important;
-    background-size: auto, 400px auto !important;
-    background-attachment: fixed, fixed !important;
+    background: {bg} !important;
+    background-color: {bg} !important;
+    background-image: none !important;
     min-height: 100vh;
     color: {fg} !important;
     --text-color: {fg} !important;
@@ -65,44 +70,24 @@ def inject_engineering_theme(mode: str = "dark") -> None:
     --secondary-text-color: {fg_muted} !important;
     --disabled-text-color: #94a3b8 !important;
   }}
+{common_transparent}
   [data-testid="stAppViewContainer"] {{
-    background: transparent !important;
     color: {fg} !important;
   }}
-  section[data-testid="stMain"] > div {{
-    background: transparent !important;
-  }}
   section[data-testid="stMain"] {{
-    background: transparent !important;
     color: {fg} !important;
   }}
   .stApp .main {{
-    background: transparent !important;
     color: {fg} !important;
   }}
-  .main > div {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] .block-container {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] [class*="block-container"] {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] [data-testid="stVerticalBlock"] {{
-    background: transparent !important;
-  }}
   [data-testid="stHeader"] {{
-    background: rgba(255, 255, 255, 0.88) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
     backdrop-filter: blur(8px);
-    border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
     color: {fg} !important;
   }}
   section[data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    background: #f8fafc !important;
     border-right: 1px solid rgba(15, 23, 42, 0.1);
     color: {fg} !important;
     --text-color: {fg} !important;
@@ -171,7 +156,7 @@ def inject_engineering_theme(mode: str = "dark") -> None:
   }}
   .stTabs [data-baseweb="tab-list"] {{
     gap: 6px;
-    background: rgba(255, 255, 255, 0.98) !important;
+    background: #ffffff !important;
     padding: 6px 8px;
     border-radius: 10px;
     border: 1px solid rgba(15, 23, 42, 0.12);
@@ -186,7 +171,7 @@ def inject_engineering_theme(mode: str = "dark") -> None:
   div[data-testid="stExpander"] details {{
     border: 1px solid rgba(15, 23, 42, 0.12);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.92) !important;
+    background: #ffffff !important;
     color: {fg} !important;
   }}
   div[data-testid="stExpander"] summary {{
@@ -194,63 +179,58 @@ def inject_engineering_theme(mode: str = "dark") -> None:
   }}
         """
     else:
-        bg_core = "#0a0f18"
-        grad = (
-            "radial-gradient(ellipse 100% 70% at 50% -20%, rgba(14, 165, 233, 0.14) 0%, transparent 55%), "
-            "radial-gradient(ellipse 60% 45% at 100% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%), "
-            "linear-gradient(180deg, #060a10 0%, #0a0f18 40%, #0c121c 100%)"
-        )
+        bg = _BG_DARK
         app_css = f"""
+  html {{
+    color-scheme: dark !important;
+  }}
   html, body {{
-    background-color: {bg_core} !important;
+    background-color: {bg} !important;
+    color: #e5e7eb !important;
   }}
   .stApp {{
-    background-color: {bg_core} !important;
-    background-image: {grad}, url("data:image/svg+xml,{svg}") !important;
-    background-repeat: no-repeat, no-repeat !important;
-    background-position: center top, right -40px bottom -36px !important;
-    background-size: auto, 420px auto !important;
-    background-attachment: fixed, fixed !important;
+    background: {bg} !important;
+    background-color: {bg} !important;
+    background-image: none !important;
     min-height: 100vh;
+    color: #e5e7eb !important;
+    --text-color: #e5e7eb !important;
+    --primary-text-color: #f8fafc !important;
+    --secondary-text-color: #94a3b8 !important;
   }}
-  [data-testid="stAppViewContainer"] {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] > div {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] {{
-    background: transparent !important;
-  }}
-  .stApp .main {{
-    background: transparent !important;
-  }}
-  .main > div {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] .block-container {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] [class*="block-container"] {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {{
-    background: transparent !important;
-  }}
-  section[data-testid="stMain"] [data-testid="stVerticalBlock"] {{
-    background: transparent !important;
-  }}
+{common_transparent}
   [data-testid="stHeader"] {{
-    background: rgba(6, 10, 16, 0.92) !important;
+    background: rgba(12, 17, 24, 0.95) !important;
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
   }}
   section[data-testid="stSidebar"] {{
-    background: linear-gradient(185deg, #0d1219 0%, #080c12 100%) !important;
-    border-right: 1px solid rgba(56, 189, 248, 0.14);
+    background: #0f1419 !important;
+    border-right: 1px solid rgba(56, 189, 248, 0.12);
+    color: #e5e7eb !important;
+    --text-color: #e5e7eb !important;
+    --primary-text-color: #f8fafc !important;
+    --secondary-text-color: #94a3b8 !important;
   }}
   section[data-testid="stSidebar"] .block-container {{
     padding-top: 1.1rem;
+  }}
+  section[data-testid="stSidebar"] p,
+  section[data-testid="stSidebar"] span,
+  section[data-testid="stSidebar"] label,
+  section[data-testid="stSidebar"] li {{
+    color: #e5e7eb !important;
+  }}
+  [data-testid="stMarkdownContainer"] p,
+  [data-testid="stMarkdownContainer"] li,
+  [data-testid="stMarkdownContainer"] strong {{
+    color: #e5e7eb !important;
+  }}
+  [data-testid="stCaption"] p {{
+    color: #94a3b8 !important;
+  }}
+  .stApp a {{
+    color: #38bdf8 !important;
   }}
   h1 {{
     color: #f0f9ff !important;
@@ -274,14 +254,23 @@ def inject_engineering_theme(mode: str = "dark") -> None:
     border-radius: 10px;
     border: 1px solid rgba(56, 189, 248, 0.12);
   }}
+  [data-baseweb="tab"] {{
+    color: #94a3b8 !important;
+  }}
+  [data-baseweb="tab"][aria-selected="true"] {{
+    color: #f0f9ff !important;
+    font-weight: 600 !important;
+  }}
   div[data-testid="stExpander"] details {{
     border: 1px solid rgba(56, 189, 248, 0.12);
     border-radius: 10px;
     background: rgba(15, 23, 42, 0.4) !important;
   }}
+  div[data-testid="stExpander"] summary {{
+    color: #e5e7eb !important;
+  }}
         """
 
-    # Prefer st.html (unsanitized); markdown can strip or alter <style> on some hosts.
     style_block = f"<style>{app_css}</style>"
     if hasattr(st, "html"):
         st.html(style_block)
@@ -292,11 +281,11 @@ def inject_engineering_theme(mode: str = "dark") -> None:
 def hero_engineering_ribbon(mode: str = "dark") -> None:
     """Thin accent under title."""
     if mode == "light":
-        grad = "linear-gradient(90deg, transparent 0%, #64748b 35%, #94a3b8 50%, #64748b 65%, transparent 100%)"
-        op = "0.65"
+        grad = "linear-gradient(90deg, transparent 0%, #94a3b8 40%, #64748b 50%, #94a3b8 60%, transparent 100%)"
+        op = "0.5"
     else:
         grad = "linear-gradient(90deg, transparent 0%, #0ea5e9 25%, #38bdf8 50%, #22d3ee 75%, transparent 100%)"
-        op = "0.85"
+        op = "0.75"
     st.markdown(
         f"""
 <div style="
