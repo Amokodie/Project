@@ -227,10 +227,87 @@ def _shell_css(t: dict[str, str]) -> str:
 """
 
 
+def _light_interactive_widgets_css() -> str:
+    """
+    Streamlit [theme] is dark-first; Base Web still paints secondary buttons / tabs / selects
+    with dark surfaces in Light mode — black blocks and text only visible on hover.
+    """
+    return """
+  /* Primary / theme tokens for light UI */
+  .stApp {
+    --primary-color: #0284c7 !important;
+    --text-color: #0f172a !important;
+  }
+  /* Tabs: visible surfaces + text (not dark-theme black) */
+  .stApp [data-baseweb="tab-list"] {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+  }
+  .stApp [data-baseweb="tab"] {
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    border: 1px solid transparent !important;
+    opacity: 1 !important;
+  }
+  .stApp [data-baseweb="tab"]:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+  .stApp [data-baseweb="tab"][aria-selected="true"] {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+  }
+  .stApp [data-baseweb="tab"] span,
+  .stApp [data-baseweb="tab"] p {
+    color: inherit !important;
+    opacity: 1 !important;
+  }
+  /* Download buttons default to secondary — force readable filled style */
+  .stApp [data-testid="stDownloadButton"] button,
+  .stApp [data-testid="stDownloadButton"] [data-baseweb="button"] {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border: 1px solid #0369a1 !important;
+    opacity: 1 !important;
+  }
+  .stApp [data-testid="stDownloadButton"] button span,
+  .stApp [data-testid="stDownloadButton"] button p {
+    color: #ffffff !important;
+  }
+  /* Sidebar selectbox: light control surface */
+  section[data-testid="stSidebar"] [data-baseweb="select"] > div,
+  section[data-testid="stSidebar"] [data-baseweb="select"] [class*="control"] {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  section[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    fill: #0f172a !important;
+  }
+  /* Sidebar code / install hints */
+  section[data-testid="stSidebar"] [data-testid="stCode"],
+  section[data-testid="stSidebar"] pre {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  section[data-testid="stSidebar"] [data-testid="stCode"] code,
+  section[data-testid="stSidebar"] pre code {
+    color: #0f172a !important;
+    background: transparent !important;
+  }
+"""
+
+
 def inject_engineering_theme(mode: str = "dark") -> None:
     """Apply unified shell + widget colors (light uses same structure as dark)."""
     t = _theme_tokens(mode == "light")
     app_css = _shell_css(t)
+    if t["scheme"] == "light":
+        app_css += _light_interactive_widgets_css()
     style_block = f"<style>{app_css}</style>"
     if hasattr(st, "html"):
         st.html(style_block)
