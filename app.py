@@ -486,16 +486,17 @@ sequence modeling (**Transformer**), and **physics constraints** (**PINN**) in o
     st.dataframe(matrix, hide_index=True, use_container_width=True)
 
     st.markdown("#### Why PINN can be “safer” than a pure black-box for aerospace")
+    # Mermaid 10: avoid raw () / : / + in unquoted labels; use quoted strings.
     mermaid = """
 flowchart TD
-    A[Fleet time series\n(26 channels / cycle)] --> B{Data budget?}
-    B -->|Large + diverse| C[Sequence model\nTransformer / CNN]
-    B -->|Sparse / few engines| D[PINN: data loss + physics loss]
-    C --> E[Residual / calibration checks vs physics baselines]
-    D --> F[Explicit wear / degradation structure in loss]
-    E --> G[Hybrid: GNN + Transformer + PINN\n(2024 frontier discussion)]
+    A["Fleet time series - 26 ch per cycle"] --> B{"Data budget?"}
+    B -->|large diverse data| C["Seq. model Transformer or CNN"]
+    B -->|sparse engines| D["PINN data plus physics loss"]
+    C --> E["Residual vs physics baselines"]
+    D --> F["Wear in loss"]
+    E --> G["Hybrid GNN Transformer PINN"]
     F --> G
-    G --> H[Monitoring + assurance:\nuncertainty, drift, rare-fault weighting]
+    G --> H["Monitoring assurance drift faults"]
     """
     components.html(
         f"""
@@ -564,25 +565,26 @@ or **PINNs** (supervised fit + physics / wear residuals). Curves and radars are 
     st.plotly_chart(fig_sensor_window_physics_attention(template=tpl), use_container_width=True)
 
     mm_theme = "neutral" if st.session_state.get("ui_theme", "dark") == "light" else "dark"
+    # Subgraph IDs must not clash with link sources; avoid en-dash in labels.
     mermaid = """
 flowchart LR
-    subgraph CNN[1D-CNN]
-        W[Windows] --> C[Conv]
-        C --> H[RUL head]
+    subgraph sg_cnn["1D CNN"]
+        W1[Windows] --> C1[Conv]
+        C1 --> H1[RUL head]
     end
-    subgraph TR[Temporal Transformer]
-        T[Tokenize cycles] --> A[Self-attention]
-        A --> H2[RUL head]
+    subgraph sg_tr["Transformer"]
+        T1[Tokenize] --> A1[Attention]
+        A1 --> H2[RUL head]
     end
-    subgraph PINN[PINN-style]
-        S[Sensors] --> N[Net]
-        N --> R[Wear residual]
-        R --> L[Total loss]
-        S --> L
+    subgraph sg_pinn["PINN"]
+        S1[Sensors] --> N1[Network]
+        N1 --> R1[Wear residual]
+        R1 --> L1[Total loss]
+        S1 --> L1
     end
-    CNN --> FD[FD001–FD004]
-    TR --> FD
-    PINN --> FD
+    H1 --> FD["C MAPSS FD001 to FD004"]
+    H2 --> FD
+    L1 --> FD
     """
     st.markdown("#### Architecture flow (qualitative)")
     components.html(
