@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import io
 import os
+import textwrap
 
 from PIL import Image
 
@@ -58,6 +59,12 @@ from eda_charts import (
     sensor_columns,
 )
 from ui_theme import hero_engineering_ribbon, inject_engineering_theme, plotly_template
+
+
+def _mermaid_src(block: str) -> str:
+    """Strip Python indentation so Mermaid sees node ids at column 0 (Mermaid 10 is strict)."""
+    return textwrap.dedent(block).strip()
+
 
 st.set_page_config(
     page_title="C-MAPSS PHM Dashboard",
@@ -486,18 +493,21 @@ sequence modeling (**Transformer**), and **physics constraints** (**PINN**) in o
     st.dataframe(matrix, hide_index=True, use_container_width=True)
 
     st.markdown("#### Why PINN can be “safer” than a pure black-box for aerospace")
-    # Mermaid 10: avoid raw () / : / + in unquoted labels; use quoted strings.
-    mermaid = """
-flowchart TD
-    A["Fleet time series - 26 ch per cycle"] --> B{"Data budget?"}
-    B -->|large diverse data| C["Seq. model Transformer or CNN"]
-    B -->|sparse engines| D["PINN data plus physics loss"]
-    C --> E["Residual vs physics baselines"]
-    D --> F["Wear in loss"]
-    E --> G["Hybrid GNN Transformer PINN"]
-    F --> G
-    G --> H["Monitoring assurance drift faults"]
-    """
+    # Mermaid 10.9.x: dedent lines (leading spaces break ids); rhombus use B{Data budget}
+    # not B{"Data budget?"} — the ? inside quoted braces triggers parse errors.
+    mermaid = _mermaid_src(
+        """
+        flowchart TD
+            A["Fleet time series - 26 ch per cycle"] --> B{Data budget}
+            B -->|large diverse data| C["Seq model Transformer or CNN"]
+            B -->|sparse engines| D["PINN data plus physics loss"]
+            C --> E["Residual vs physics baselines"]
+            D --> F["Wear in loss"]
+            E --> G["Hybrid GNN Transformer PINN"]
+            F --> G
+            G --> H["Monitoring assurance drift faults"]
+        """
+    )
     components.html(
         f"""
 <!DOCTYPE html>
@@ -565,27 +575,29 @@ or **PINNs** (supervised fit + physics / wear residuals). Curves and radars are 
     st.plotly_chart(fig_sensor_window_physics_attention(template=tpl), use_container_width=True)
 
     mm_theme = "neutral" if st.session_state.get("ui_theme", "dark") == "light" else "dark"
-    # Subgraph IDs must not clash with link sources; avoid en-dash in labels.
-    mermaid = """
-flowchart LR
-    subgraph sg_cnn["1D CNN"]
-        W1[Windows] --> C1[Conv]
-        C1 --> H1[RUL head]
-    end
-    subgraph sg_tr["Transformer"]
-        T1[Tokenize] --> A1[Attention]
-        A1 --> H2[RUL head]
-    end
-    subgraph sg_pinn["PINN"]
-        S1[Sensors] --> N1[Network]
-        N1 --> R1[Wear residual]
-        R1 --> L1[Total loss]
-        S1 --> L1
-    end
-    H1 --> FD["C MAPSS FD001 to FD004"]
-    H2 --> FD
-    L1 --> FD
-    """
+    # Subgraph IDs must not clash with link sources; dedent so lines start at column 0.
+    mermaid = _mermaid_src(
+        """
+        flowchart LR
+            subgraph sg_cnn["1D CNN"]
+                W1[Windows] --> C1[Conv]
+                C1 --> H1[RUL head]
+            end
+            subgraph sg_tr["Transformer"]
+                T1[Tokenize] --> A1[Attention]
+                A1 --> H2[RUL head]
+            end
+            subgraph sg_pinn["PINN"]
+                S1[Sensors] --> N1[Network]
+                N1 --> R1[Wear residual]
+                R1 --> L1[Total loss]
+                S1 --> L1
+            end
+            H1 --> FD["C-MAPSS FD001-FD004"]
+            H2 --> FD
+            L1 --> FD
+        """
+    )
     st.markdown("#### Architecture flow (qualitative)")
     components.html(
         f"""
