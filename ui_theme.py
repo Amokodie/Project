@@ -35,13 +35,21 @@ def inject_engineering_theme(mode: str = "dark") -> None:
     if light:
         # Soft cool-gray page + faint blue wash + motif
         bg_core = "#eef1f5"
+        fg = "#0f172a"
+        fg_muted = "#334155"
+        fg_soft = "#475569"
         grad = (
             "radial-gradient(ellipse 90% 55% at 50% -15%, rgba(59, 130, 246, 0.12) 0%, transparent 55%), "
             "linear-gradient(180deg, #f8fafc 0%, #eef1f5 45%, #e8edf3 100%)"
         )
+        # config.toml keeps [theme] textColor for *dark*; in-app Light must override Streamlit tokens + widgets.
         app_css = f"""
+  html {{
+    color-scheme: light !important;
+  }}
   html, body {{
     background-color: {bg_core} !important;
+    color: {fg} !important;
   }}
   .stApp {{
     background-color: {bg_core} !important;
@@ -51,18 +59,26 @@ def inject_engineering_theme(mode: str = "dark") -> None:
     background-size: auto, 400px auto !important;
     background-attachment: fixed, fixed !important;
     min-height: 100vh;
+    color: {fg} !important;
+    --text-color: {fg} !important;
+    --primary-text-color: {fg} !important;
+    --secondary-text-color: {fg_muted} !important;
+    --disabled-text-color: #94a3b8 !important;
   }}
   [data-testid="stAppViewContainer"] {{
     background: transparent !important;
+    color: {fg} !important;
   }}
   section[data-testid="stMain"] > div {{
     background: transparent !important;
   }}
   section[data-testid="stMain"] {{
     background: transparent !important;
+    color: {fg} !important;
   }}
   .stApp .main {{
     background: transparent !important;
+    color: {fg} !important;
   }}
   .main > div {{
     background: transparent !important;
@@ -83,13 +99,55 @@ def inject_engineering_theme(mode: str = "dark") -> None:
     background: rgba(255, 255, 255, 0.88) !important;
     backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+    color: {fg} !important;
   }}
   section[data-testid="stSidebar"] {{
     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
     border-right: 1px solid rgba(15, 23, 42, 0.1);
+    color: {fg} !important;
+    --text-color: {fg} !important;
+    --primary-text-color: {fg} !important;
+    --secondary-text-color: {fg_muted} !important;
+  }}
+  section[data-testid="stSidebar"] p,
+  section[data-testid="stSidebar"] span,
+  section[data-testid="stSidebar"] label,
+  section[data-testid="stSidebar"] li {{
+    color: {fg} !important;
+  }}
+  section[data-testid="stSidebar"] input,
+  section[data-testid="stSidebar"] textarea {{
+    color: {fg} !important;
+    -webkit-text-fill-color: {fg} !important;
+    background-color: #ffffff !important;
+  }}
+  [data-testid="stMarkdownContainer"] p,
+  [data-testid="stMarkdownContainer"] li,
+  [data-testid="stMarkdownContainer"] ol,
+  [data-testid="stMarkdownContainer"] ul,
+  [data-testid="stMarkdownContainer"] strong,
+  [data-testid="stMarkdownContainer"] em {{
+    color: {fg} !important;
+  }}
+  [data-testid="stMarkdownContainer"] pre code {{
+    color: #f1f5f9 !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="radio"] label,
+  section[data-testid="stSidebar"] [data-baseweb="radio"] div {{
+    color: {fg} !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="select"] div[class] {{
+    color: {fg} !important;
+  }}
+  .stApp a {{
+    color: #0369a1 !important;
+  }}
+  [data-testid="stCaption"] p,
+  [data-testid="stCaption"] {{
+    color: {fg_soft} !important;
   }}
   h1 {{
-    color: #0f172a !important;
+    color: {fg} !important;
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
   }}
@@ -102,18 +160,37 @@ def inject_engineering_theme(mode: str = "dark") -> None:
     border: 1px solid rgba(15, 23, 42, 0.1);
     border-radius: 10px;
     padding: 0.65rem 0.85rem;
+    color: {fg} !important;
+  }}
+  div[data-testid="stMetric"] p,
+  div[data-testid="stMetric"] span {{
+    color: {fg} !important;
+  }}
+  div[data-testid="stMetric"] [data-testid="stMarkdownContainer"] p {{
+    color: {fg_muted} !important;
   }}
   .stTabs [data-baseweb="tab-list"] {{
     gap: 6px;
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
     padding: 6px 8px;
     border-radius: 10px;
-    border: 1px solid rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+  }}
+  [data-baseweb="tab"] {{
+    color: {fg_muted} !important;
+  }}
+  [data-baseweb="tab"][aria-selected="true"] {{
+    color: {fg} !important;
+    font-weight: 600 !important;
   }}
   div[data-testid="stExpander"] details {{
     border: 1px solid rgba(15, 23, 42, 0.12);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.85) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: {fg} !important;
+  }}
+  div[data-testid="stExpander"] summary {{
+    color: {fg} !important;
   }}
         """
     else:
