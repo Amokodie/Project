@@ -21,6 +21,12 @@ import streamlit.components.v1 as components
 from plotly.subplots import make_subplots
 
 from analysis_pdf import build_cmapss_brief_pdf
+from cnn_pinn_lab import (
+    fig_loss_components_bar,
+    fig_radar_cnn_vs_pinn,
+    fig_sensor_window_vs_physics,
+    fig_training_loss_curves,
+)
 from cmapss_data import (
     FD_SCENARIO_INFO,
     cmapss_file,
@@ -51,6 +57,7 @@ from eda_charts import (
     non_constant_sensors,
     sensor_columns,
 )
+from ui_theme import hero_engineering_ribbon, inject_engineering_theme
 
 st.set_page_config(
     page_title="C-MAPSS PHM Dashboard",
@@ -139,6 +146,7 @@ def render_authors_banner():
 
 def pillar_intro():
     st.title("NASA C-MAPSS Turbofan Engine — PHM Dashboard")
+    hero_engineering_ribbon()
     render_authors_banner()
     st.markdown(
         """
@@ -496,11 +504,95 @@ flowchart TD
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head><body>
 <div class="mermaid">{mermaid}</div>
-<script>mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>
+<script>mermaid.initialize({{startOnLoad:true, theme:'dark'}});</script>
 </body></html>
         """,
         height=420,
     )
+
+
+def tab_cnn_pinn_lab():
+    st.subheader("CNN vs PINN — PHM deep learning view")
+    st.markdown(
+        """
+This tab is a **technical briefing** for turbofan RUL: how a **convolutional** time-series model differs from a **physics-informed**
+neural network (PINN) when you embed degradation structure. Numbers and curves are **illustrative** unless you plug in your own training logs.
+        """
+    )
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("CNN window", "Local receptive field", "sliding cycles")
+    k2.metric("PINN prior", "Residual + data", "physics loss")
+    k3.metric("FD004", "Multi-regime", "CNN favors data")
+    k4.metric("PINN edge", "Few labels", "structure helps")
+
+    st.markdown("#### Loss formulations (compact)")
+    st.latex(
+        r"""
+        \mathcal{L}_{\text{CNN}} = \frac{1}{N}\sum_i \bigl( \hat{y}_i - y_i \bigr)^2 + \lambda \lVert W \rVert_2^2
+        """
+    )
+    st.latex(
+        r"""
+        \mathcal{L}_{\text{PINN}} \approx \underbrace{\sum_j \bigl( s_j - \hat{s}_j \bigr)^2}_{\text{sensor fit}}
+        + \lambda_1 \underbrace{\bigl( \partial_t \hat{w} - f_{\text{wear}}(t;\theta) \bigr)^2}_{\text{wear / residual}}
+        + \lambda_2 \,\lVert \phi \rVert^2
+        """
+    )
+    st.caption(
+        "Symbols: $s$ sensors, $w$ wear proxy, $f_{\text{wear}}$ an exponential or power-law prior; "
+        "exact forms depend on your physics model."
+    )
+
+    st.markdown("#### Illustrative training dynamics")
+    st.plotly_chart(fig_training_loss_curves(), use_container_width=True)
+
+    r1, r2 = st.columns(2)
+    with r1:
+        st.plotly_chart(fig_radar_cnn_vs_pinn(), use_container_width=True)
+    with r2:
+        st.plotly_chart(fig_loss_components_bar(), use_container_width=True)
+
+    st.markdown("#### Intuition plots — local convolution vs global physics channel")
+    st.plotly_chart(fig_sensor_window_vs_physics(), use_container_width=True)
+
+    mermaid = """
+flowchart LR
+    subgraph CNN[1D-CNN / temporal conv]
+        W[Sliding windows] --> C[Conv stacks]
+        C --> P[Pooling]
+        P --> H[Dense RUL head]
+    end
+    subgraph PINN[PINN-style hybrid]
+        S[Sensors] --> N[Network]
+        N --> R[Residual / wear]
+        R --> L[Total loss]
+        S --> L
+    end
+    CNN -->|needs coverage| FD4[FD004 regimes]
+    PINN -->|fewer labels| FD1[Sparse fleets]
+    """
+    st.markdown("#### Architecture flow (qualitative)")
+    components.html(
+        f"""
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head><body>
+<div class="mermaid">{mermaid}</div>
+<script>mermaid.initialize({{startOnLoad:true, theme:'dark'}});</script>
+</body></html>
+        """,
+        height=320,
+    )
+
+    with st.expander("Implementation checklist (for your assignment code)", expanded=False):
+        st.markdown(
+            r"""
+- **CNN baseline:** normalize per engine; build **fixed-length windows**; 1D conv → GAP → RUL regression; report RMSE on test RUL.  
+- **PINN-style:** add a **wear state** or map sensors to a residual; balance $\lambda$ with a validation curve; compare against CNN with **matched parameter budget**.  
+- **Fairness:** same seed, same train/val split, **quantization** optional for edge story in the “Compute” tab.
+            """
+        )
 
 
 def tab_compute():
@@ -559,6 +651,7 @@ def tab_compute():
 
 
 def main():
+    inject_engineering_theme()
     pillar_intro()
 
     default_root = resolve_cmapss_root()
@@ -644,12 +737,13 @@ def main():
     ]
     data_caption = " | ".join(cap_parts)
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         [
             "Fleet overview",
             "Exploratory analysis",
             "Data audit report",
             "Architecture selection",
+            "CNN vs PINN lab",
             "Compute & deployment",
         ]
     )
@@ -662,6 +756,8 @@ def main():
     with tab4:
         tab_architecture()
     with tab5:
+        tab_cnn_pinn_lab()
+    with tab6:
         tab_compute()
 
     with st.sidebar:
