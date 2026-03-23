@@ -1,216 +1,142 @@
-"""Clean solid backgrounds for Dark/Light; transparent main stack so the app shell color shows."""
+"""
+Dark / Light appearance: one CSS template for both (same selectors as dark), different palettes.
+Streamlit Cloud [theme] is dark-first; Light overrides those tokens so widgets match the shell.
+"""
 
 from __future__ import annotations
 
 import streamlit as st
 
-# Match .streamlit/config.toml backgroundColor for dark (avoids Streamlit vs custom mismatch).
+# Must match .streamlit/config.toml for default (dark) deploy.
 _BG_DARK = "#0c1118"
-_BG_LIGHT = "#f1f5f9"
+_SIDEBAR_DARK = "#0f1419"
 
 
-def inject_engineering_theme(mode: str = "dark") -> None:
-    """
-    Streamlit paints inner containers from [theme]; we set the shell to a flat color and
-    force main blocks transparent so the same fill is visible in Dark and Light.
-    """
-    light = mode == "light"
+def _theme_tokens(light: bool) -> dict[str, str]:
+    """Parallel palettes: light mirrors dark structure to avoid token conflict with config.toml."""
+    if not light:
+        return {
+            "scheme": "dark",
+            "bg": _BG_DARK,
+            "bg_sidebar": _SIDEBAR_DARK,
+            "fg": "#e5e7eb",
+            "fg_muted": "#94a3b8",
+            "fg_caption": "#94a3b8",
+            "fg_h1": "#f0f9ff",
+            "fg_h23": "#bae6fd",
+            "link": "#38bdf8",
+            "header_bg": "rgba(12, 17, 24, 0.95)",
+            "header_border": "rgba(56, 189, 248, 0.12)",
+            "sidebar_border": "rgba(56, 189, 248, 0.12)",
+            "metric_bg": "rgba(15, 23, 42, 0.55)",
+            "metric_border": "rgba(56, 189, 248, 0.15)",
+            "tabs_bg": "rgba(15, 23, 42, 0.55)",
+            "tabs_border": "rgba(56, 189, 248, 0.12)",
+            "tab_inactive": "#94a3b8",
+            "tab_active": "#f0f9ff",
+            "expander_bg": "rgba(15, 23, 42, 0.4)",
+            "expander_border": "rgba(56, 189, 248, 0.12)",
+            "input_bg": "rgba(15, 23, 42, 0.35)",
+            "code_block_fg": "#e5e7eb",
+            "primary_var": "#f8fafc",
+            "secondary_var": "#94a3b8",
+        }
+    return {
+        "scheme": "light",
+        "bg": "#ffffff",
+        "bg_sidebar": "#f1f5f9",
+        "fg": "#0f172a",
+        "fg_muted": "#475569",
+        "fg_caption": "#64748b",
+        "fg_h1": "#0f172a",
+        "fg_h23": "#1e293b",
+        "link": "#0369a1",
+        "header_bg": "rgba(255, 255, 255, 0.98)",
+        "header_border": "rgba(15, 23, 42, 0.1)",
+        "sidebar_border": "rgba(15, 23, 42, 0.12)",
+        "metric_bg": "#ffffff",
+        "metric_border": "rgba(15, 23, 42, 0.1)",
+        "tabs_bg": "#f1f5f9",
+        "tabs_border": "rgba(15, 23, 42, 0.12)",
+        "tab_inactive": "#64748b",
+        "tab_active": "#0f172a",
+        "expander_bg": "#ffffff",
+        "expander_border": "rgba(15, 23, 42, 0.12)",
+        "input_bg": "#ffffff",
+        "code_block_fg": "#0f172a",
+        "primary_var": "#0f172a",
+        "secondary_var": "#475569",
+    }
 
-    common_transparent = """
-  [data-testid="stAppViewContainer"] {
-    background: transparent !important;
-  }
-  section[data-testid="stMain"] > div {
-    background: transparent !important;
-  }
-  section[data-testid="stMain"] {
-    background: transparent !important;
-  }
-  .stApp .main {
-    background: transparent !important;
-  }
-  .main > div {
-    background: transparent !important;
-  }
-  section[data-testid="stMain"] .block-container {
-    background: transparent !important;
-  }
-  section[data-testid="stMain"] [class*="block-container"] {
-    background: transparent !important;
-  }
-  section[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {
-    background: transparent !important;
-  }
-  section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
-    background: transparent !important;
-  }
-"""
 
-    if light:
-        bg = _BG_LIGHT
-        fg = "#0f172a"
-        fg_muted = "#334155"
-        fg_soft = "#475569"
-        app_css = f"""
+def _shell_css(t: dict[str, str]) -> str:
+    """Same rules for light and dark; only token values change."""
+    bg = t["bg"]
+    return f"""
   html {{
-    color-scheme: light !important;
+    color-scheme: {t["scheme"]} !important;
   }}
   html, body {{
     background-color: {bg} !important;
-    color: {fg} !important;
+    color: {t["fg"]} !important;
   }}
   .stApp {{
     background: {bg} !important;
     background-color: {bg} !important;
     background-image: none !important;
     min-height: 100vh;
-    color: {fg} !important;
-    --text-color: {fg} !important;
-    --primary-text-color: {fg} !important;
-    --secondary-text-color: {fg_muted} !important;
-    --disabled-text-color: #94a3b8 !important;
+    color: {t["fg"]} !important;
+    --text-color: {t["fg"]} !important;
+    --primary-text-color: {t["primary_var"]} !important;
+    --secondary-text-color: {t["secondary_var"]} !important;
+    --background-color: {bg} !important;
+    --secondary-background-color: {t["bg_sidebar"]} !important;
   }}
-{common_transparent}
   [data-testid="stAppViewContainer"] {{
-    color: {fg} !important;
+    background: transparent !important;
+    color: {t["fg"]} !important;
+  }}
+  section[data-testid="stMain"] > div {{
+    background: transparent !important;
   }}
   section[data-testid="stMain"] {{
-    color: {fg} !important;
+    background: transparent !important;
+    color: {t["fg"]} !important;
   }}
   .stApp .main {{
-    color: {fg} !important;
+    background: transparent !important;
+    color: {t["fg"]} !important;
+  }}
+  .main > div {{
+    background: transparent !important;
+  }}
+  section[data-testid="stMain"] .block-container {{
+    background: transparent !important;
+  }}
+  section[data-testid="stMain"] [class*="block-container"] {{
+    background: transparent !important;
+  }}
+  section[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {{
+    background: transparent !important;
+  }}
+  section[data-testid="stMain"] [data-testid="stVerticalBlock"] {{
+    background: transparent !important;
   }}
   [data-testid="stHeader"] {{
-    background: rgba(255, 255, 255, 0.92) !important;
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-    color: {fg} !important;
-  }}
-  section[data-testid="stSidebar"] {{
-    background: #f8fafc !important;
-    border-right: 1px solid rgba(15, 23, 42, 0.1);
-    color: {fg} !important;
-    --text-color: {fg} !important;
-    --primary-text-color: {fg} !important;
-    --secondary-text-color: {fg_muted} !important;
-  }}
-  section[data-testid="stSidebar"] p,
-  section[data-testid="stSidebar"] span,
-  section[data-testid="stSidebar"] label,
-  section[data-testid="stSidebar"] li {{
-    color: {fg} !important;
-  }}
-  section[data-testid="stSidebar"] input,
-  section[data-testid="stSidebar"] textarea {{
-    color: {fg} !important;
-    -webkit-text-fill-color: {fg} !important;
-    background-color: #ffffff !important;
-  }}
-  [data-testid="stMarkdownContainer"] p,
-  [data-testid="stMarkdownContainer"] li,
-  [data-testid="stMarkdownContainer"] ol,
-  [data-testid="stMarkdownContainer"] ul,
-  [data-testid="stMarkdownContainer"] strong,
-  [data-testid="stMarkdownContainer"] em {{
-    color: {fg} !important;
-  }}
-  [data-testid="stMarkdownContainer"] pre code {{
-    color: #f1f5f9 !important;
-  }}
-  section[data-testid="stSidebar"] [data-baseweb="radio"] label,
-  section[data-testid="stSidebar"] [data-baseweb="radio"] div {{
-    color: {fg} !important;
-  }}
-  section[data-testid="stSidebar"] [data-baseweb="select"] div[class] {{
-    color: {fg} !important;
-  }}
-  .stApp a {{
-    color: #0369a1 !important;
-  }}
-  [data-testid="stCaption"] p,
-  [data-testid="stCaption"] {{
-    color: {fg_soft} !important;
-  }}
-  h1 {{
-    color: {fg} !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
-  }}
-  h2, h3 {{
-    color: #1e3a5f !important;
-    font-weight: 600 !important;
-  }}
-  div[data-testid="stMetric"] {{
-    background: #ffffff !important;
-    border: 1px solid rgba(15, 23, 42, 0.1);
-    border-radius: 10px;
-    padding: 0.65rem 0.85rem;
-    color: {fg} !important;
-  }}
-  div[data-testid="stMetric"] p,
-  div[data-testid="stMetric"] span {{
-    color: {fg} !important;
-  }}
-  div[data-testid="stMetric"] [data-testid="stMarkdownContainer"] p {{
-    color: {fg_muted} !important;
-  }}
-  .stTabs [data-baseweb="tab-list"] {{
-    gap: 6px;
-    background: #ffffff !important;
-    padding: 6px 8px;
-    border-radius: 10px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-  }}
-  [data-baseweb="tab"] {{
-    color: {fg_muted} !important;
-  }}
-  [data-baseweb="tab"][aria-selected="true"] {{
-    color: {fg} !important;
-    font-weight: 600 !important;
-  }}
-  div[data-testid="stExpander"] details {{
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    border-radius: 10px;
-    background: #ffffff !important;
-    color: {fg} !important;
-  }}
-  div[data-testid="stExpander"] summary {{
-    color: {fg} !important;
-  }}
-        """
-    else:
-        bg = _BG_DARK
-        app_css = f"""
-  html {{
-    color-scheme: dark !important;
-  }}
-  html, body {{
-    background-color: {bg} !important;
-    color: #e5e7eb !important;
-  }}
-  .stApp {{
-    background: {bg} !important;
-    background-color: {bg} !important;
-    background-image: none !important;
-    min-height: 100vh;
-    color: #e5e7eb !important;
-    --text-color: #e5e7eb !important;
-    --primary-text-color: #f8fafc !important;
-    --secondary-text-color: #94a3b8 !important;
-  }}
-{common_transparent}
-  [data-testid="stHeader"] {{
-    background: rgba(12, 17, 24, 0.95) !important;
+    background: {t["header_bg"]} !important;
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
+    border-bottom: 1px solid {t["header_border"]};
+    color: {t["fg"]} !important;
   }}
   section[data-testid="stSidebar"] {{
-    background: #0f1419 !important;
-    border-right: 1px solid rgba(56, 189, 248, 0.12);
-    color: #e5e7eb !important;
-    --text-color: #e5e7eb !important;
-    --primary-text-color: #f8fafc !important;
-    --secondary-text-color: #94a3b8 !important;
+    background: {t["bg_sidebar"]} !important;
+    border-right: 1px solid {t["sidebar_border"]};
+    color: {t["fg"]} !important;
+    --text-color: {t["fg"]} !important;
+    --primary-text-color: {t["primary_var"]} !important;
+    --secondary-text-color: {t["secondary_var"]} !important;
+    --background-color: {t["bg_sidebar"]} !important;
+    --secondary-background-color: {t["input_bg"]} !important;
   }}
   section[data-testid="stSidebar"] .block-container {{
     padding-top: 1.1rem;
@@ -219,58 +145,92 @@ def inject_engineering_theme(mode: str = "dark") -> None:
   section[data-testid="stSidebar"] span,
   section[data-testid="stSidebar"] label,
   section[data-testid="stSidebar"] li {{
-    color: #e5e7eb !important;
+    color: {t["fg"]} !important;
+  }}
+  section[data-testid="stSidebar"] input,
+  section[data-testid="stSidebar"] textarea {{
+    color: {t["fg"]} !important;
+    -webkit-text-fill-color: {t["fg"]} !important;
+    background-color: {t["input_bg"]} !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="radio"] label,
+  section[data-testid="stSidebar"] [data-baseweb="radio"] div {{
+    color: {t["fg"]} !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="select"] div[class] {{
+    color: {t["fg"]} !important;
   }}
   [data-testid="stMarkdownContainer"] p,
   [data-testid="stMarkdownContainer"] li,
-  [data-testid="stMarkdownContainer"] strong {{
-    color: #e5e7eb !important;
+  [data-testid="stMarkdownContainer"] ol,
+  [data-testid="stMarkdownContainer"] ul,
+  [data-testid="stMarkdownContainer"] strong,
+  [data-testid="stMarkdownContainer"] em {{
+    color: {t["fg"]} !important;
   }}
-  [data-testid="stCaption"] p {{
-    color: #94a3b8 !important;
+  [data-testid="stMarkdownContainer"] pre code {{
+    color: {t["code_block_fg"]} !important;
+  }}
+  [data-testid="stCaption"] p,
+  [data-testid="stCaption"] {{
+    color: {t["fg_caption"]} !important;
   }}
   .stApp a {{
-    color: #38bdf8 !important;
+    color: {t["link"]} !important;
   }}
   h1 {{
-    color: #f0f9ff !important;
+    color: {t["fg_h1"]} !important;
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
   }}
   h2, h3 {{
-    color: #bae6fd !important;
+    color: {t["fg_h23"]} !important;
     font-weight: 600 !important;
   }}
   div[data-testid="stMetric"] {{
-    background: rgba(15, 23, 42, 0.55) !important;
-    border: 1px solid rgba(56, 189, 248, 0.15);
+    background: {t["metric_bg"]} !important;
+    border: 1px solid {t["metric_border"]};
     border-radius: 10px;
     padding: 0.65rem 0.85rem;
+    color: {t["fg"]} !important;
+  }}
+  div[data-testid="stMetric"] p,
+  div[data-testid="stMetric"] span {{
+    color: {t["fg"]} !important;
+  }}
+  div[data-testid="stMetric"] [data-testid="stMarkdownContainer"] p {{
+    color: {t["fg_muted"]} !important;
   }}
   .stTabs [data-baseweb="tab-list"] {{
     gap: 6px;
-    background: rgba(15, 23, 42, 0.55) !important;
+    background: {t["tabs_bg"]} !important;
     padding: 6px 8px;
     border-radius: 10px;
-    border: 1px solid rgba(56, 189, 248, 0.12);
+    border: 1px solid {t["tabs_border"]};
   }}
   [data-baseweb="tab"] {{
-    color: #94a3b8 !important;
+    color: {t["tab_inactive"]} !important;
   }}
   [data-baseweb="tab"][aria-selected="true"] {{
-    color: #f0f9ff !important;
+    color: {t["tab_active"]} !important;
     font-weight: 600 !important;
   }}
   div[data-testid="stExpander"] details {{
-    border: 1px solid rgba(56, 189, 248, 0.12);
+    border: 1px solid {t["expander_border"]};
     border-radius: 10px;
-    background: rgba(15, 23, 42, 0.4) !important;
+    background: {t["expander_bg"]} !important;
+    color: {t["fg"]} !important;
   }}
   div[data-testid="stExpander"] summary {{
-    color: #e5e7eb !important;
+    color: {t["fg"]} !important;
   }}
-        """
+"""
 
+
+def inject_engineering_theme(mode: str = "dark") -> None:
+    """Apply unified shell + widget colors (light uses same structure as dark)."""
+    t = _theme_tokens(mode == "light")
+    app_css = _shell_css(t)
     style_block = f"<style>{app_css}</style>"
     if hasattr(st, "html"):
         st.html(style_block)
@@ -281,8 +241,8 @@ def inject_engineering_theme(mode: str = "dark") -> None:
 def hero_engineering_ribbon(mode: str = "dark") -> None:
     """Thin accent under title."""
     if mode == "light":
-        grad = "linear-gradient(90deg, transparent 0%, #94a3b8 40%, #64748b 50%, #94a3b8 60%, transparent 100%)"
-        op = "0.5"
+        grad = "linear-gradient(90deg, transparent 0%, #64748b 38%, #94a3b8 50%, #64748b 62%, transparent 100%)"
+        op = "0.45"
     else:
         grad = "linear-gradient(90deg, transparent 0%, #0ea5e9 25%, #38bdf8 50%, #22d3ee 75%, transparent 100%)"
         op = "0.75"
