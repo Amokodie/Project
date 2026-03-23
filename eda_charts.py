@@ -7,8 +7,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from plotly_theme import apply_plotly_theme
-
 
 def sensor_columns(df: pd.DataFrame) -> list[str]:
     return [c for c in df.columns if c.startswith("sensor_")]
@@ -33,12 +31,11 @@ def subsample_df(df: pd.DataFrame, max_rows: int = 60_000, seed: int = 0) -> pd.
     return df.sample(max_rows, random_state=seed)
 
 
-def fig_correlation_heatmap(df: pd.DataFrame, title: str, max_rows: int = 50_000, template: str = "plotly_dark") -> go.Figure:
+def fig_correlation_heatmap(df: pd.DataFrame, title: str, max_rows: int = 50_000) -> go.Figure:
     cols = non_constant_sensors(df)
     if len(cols) < 2:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="Not enough varying sensors", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     sub_full = df[cols].astype(float)
     sub = subsample_df(sub_full, max_rows=max_rows)
@@ -61,11 +58,10 @@ def fig_correlation_heatmap(df: pd.DataFrame, title: str, max_rows: int = 50_000
         xaxis=dict(tickangle=-45),
         yaxis=dict(autorange="reversed"),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_max_cycle_per_unit(df: pd.DataFrame, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_max_cycle_per_unit(df: pd.DataFrame, title: str) -> go.Figure:
     g = df.groupby("unit")["cycle"].max().sort_values(ascending=True)
     fig = go.Figure(
         data=go.Bar(x=g.values, y=[str(u) for u in g.index], orientation="h", marker_color="#3b6ea5")
@@ -77,11 +73,10 @@ def fig_max_cycle_per_unit(df: pd.DataFrame, title: str, template: str = "plotly
         yaxis_title="Engine unit",
         margin=dict(l=80, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_settings_2d(df: pd.DataFrame, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_settings_2d(df: pd.DataFrame, title: str) -> go.Figure:
     sample = df if len(df) <= 8000 else df.sample(8000, random_state=0)
     fig = go.Figure(
         data=go.Scatter(
@@ -100,11 +95,10 @@ def fig_settings_2d(df: pd.DataFrame, title: str, template: str = "plotly_dark")
         height=420,
         margin=dict(l=50, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_sensor_std_bar(df: pd.DataFrame, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_sensor_std_bar(df: pd.DataFrame, title: str) -> go.Figure:
     cols = sensor_columns(df)
     stds = [float(df[c].std()) for c in cols]
     fig = go.Figure(
@@ -118,11 +112,10 @@ def fig_sensor_std_bar(df: pd.DataFrame, title: str, template: str = "plotly_dar
         margin=dict(l=50, r=20, t=50, b=80),
         xaxis=dict(tickangle=-45),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_run_length_histogram(df: pd.DataFrame, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_run_length_histogram(df: pd.DataFrame, title: str) -> go.Figure:
     mx = df.groupby("unit")["cycle"].max()
     fig = go.Figure(data=go.Histogram(x=mx.values, nbinsx=25, marker_color="#457b9d"))
     fig.update_layout(
@@ -132,11 +125,10 @@ def fig_run_length_histogram(df: pd.DataFrame, title: str, template: str = "plot
         height=380,
         margin=dict(l=50, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_rul_histogram(rul: np.ndarray, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_rul_histogram(rul: np.ndarray, title: str) -> go.Figure:
     fig = go.Figure(data=go.Histogram(x=rul, nbinsx=30, marker_color="#6a994e"))
     fig.update_layout(
         title=title,
@@ -145,7 +137,6 @@ def fig_rul_histogram(rul: np.ndarray, title: str, template: str = "plotly_dark"
         height=400,
         margin=dict(l=50, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
@@ -153,13 +144,11 @@ def fig_normalized_ensemble(
     df: pd.DataFrame,
     sensor_cols: list[str],
     title: str,
-    template: str = "plotly_dark",
 ) -> go.Figure:
     """Mean sensor vs normalized engine life (cycle / max_cycle per unit)."""
     if not sensor_cols:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="No sensors", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     rows = []
     for u, g in df.groupby("unit"):
@@ -172,7 +161,6 @@ def fig_normalized_ensemble(
     if not rows:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="No data", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     long = pd.concat(rows, ignore_index=True)
     # Bin life for stable mean
@@ -198,13 +186,10 @@ def fig_normalized_ensemble(
         fig.update_yaxes(title_text=s.replace("sensor_", "s"), row=r, col=1)
     fig.update_layout(height=200 * nrows + 60, title=title, margin=dict(l=50, r=20, t=60, b=40))
     fig.update_xaxes(title_text="Normalized life (0=start, 1=last cycle)", row=nrows, col=1)
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_pair_sensors_last_snapshot(
-    df: pd.DataFrame, s1: str, s2: str, title: str, template: str = "plotly_dark"
-) -> go.Figure:
+def fig_pair_sensors_last_snapshot(df: pd.DataFrame, s1: str, s2: str, title: str) -> go.Figure:
     """Last-cycle snapshot per engine: useful for spread / fault mixing."""
     last = df.sort_values(["unit", "cycle"]).groupby("unit", as_index=False).tail(1)
     fig = go.Figure(
@@ -224,19 +209,15 @@ def fig_pair_sensors_last_snapshot(
         height=440,
         margin=dict(l=50, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_sensor_cycle_correlation(
-    df: pd.DataFrame, title: str, max_rows: int = 80_000, template: str = "plotly_dark"
-) -> go.Figure:
+def fig_sensor_cycle_correlation(df: pd.DataFrame, title: str, max_rows: int = 80_000) -> go.Figure:
     """Absolute Pearson correlation between each sensor and cycle index (fleet-wide exploratory trend)."""
     cols = non_constant_sensors(df)
     if not cols:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="No varying sensors", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     sub = subsample_df(df, max_rows=max_rows)
     cy = sub["cycle"].astype(float)
@@ -263,13 +244,10 @@ def fig_sensor_cycle_correlation(
         xaxis=dict(tickangle=-45),
         yaxis=dict(range=[0, 1.05]),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_settings_3d(
-    df: pd.DataFrame, title: str, max_rows: int = 12_000, template: str = "plotly_dark"
-) -> go.Figure:
+def fig_settings_3d(df: pd.DataFrame, title: str, max_rows: int = 12_000) -> go.Figure:
     sub = subsample_df(df, max_rows=max_rows)
     fig = go.Figure(
         data=go.Scatter3d(
@@ -299,17 +277,15 @@ def fig_settings_3d(
         height=520,
         margin=dict(l=0, r=0, t=50, b=20),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_pca_last_snapshot(df: pd.DataFrame, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_pca_last_snapshot(df: pd.DataFrame, title: str) -> go.Figure:
     """PCA (SVD) on standardized last-cycle sensor vector per engine."""
     cols = non_constant_sensors(df)
     if len(cols) < 3:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="Need >=3 varying sensors", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     last = df.sort_values(["unit", "cycle"]).groupby("unit", as_index=False).tail(1)
     X = last[cols].values.astype(float)
@@ -339,7 +315,6 @@ def fig_pca_last_snapshot(df: pd.DataFrame, title: str, template: str = "plotly_
         height=460,
         margin=dict(l=50, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
@@ -348,7 +323,6 @@ def fig_train_test_last_overlay(
     test_df: pd.DataFrame,
     sensor: str,
     title: str,
-    template: str = "plotly_dark",
 ) -> go.Figure:
     t_last = train_df.sort_values(["unit", "cycle"]).groupby("unit", as_index=False).tail(1)[sensor]
     te_last = test_df.sort_values(["unit", "cycle"]).groupby("unit", as_index=False).tail(1)[sensor]
@@ -363,11 +337,10 @@ def fig_train_test_last_overlay(
         height=400,
         margin=dict(l=50, r=20, t=50, b=40),
     )
-    apply_plotly_theme(fig, template)
     return fig
 
 
-def fig_rul_overview(rul: np.ndarray, title: str, template: str = "plotly_dark") -> go.Figure:
+def fig_rul_overview(rul: np.ndarray, title: str) -> go.Figure:
     x = np.arange(1, len(rul) + 1, dtype=float)
     fig = make_subplots(
         rows=1,
@@ -392,7 +365,6 @@ def fig_rul_overview(rul: np.ndarray, title: str, template: str = "plotly_dark")
     fig.update_xaxes(title_text="Row / engine index in RUL file", row=1, col=2)
     fig.update_yaxes(title_text="RUL", row=1, col=2)
     fig.update_layout(title=title, height=420, margin=dict(l=50, r=20, t=60, b=40))
-    apply_plotly_theme(fig, template)
     return fig
 
 
@@ -400,13 +372,11 @@ def fig_normalized_ensemble_extended(
     df: pd.DataFrame,
     sensor_cols: list[str],
     title: str,
-    template: str = "plotly_dark",
 ) -> go.Figure:
     """Mean sensor vs normalized engine life — up to four sensors (stacked)."""
     if not sensor_cols:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="No sensors", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     use_cols = sensor_cols[:4]
     rows: list[pd.DataFrame] = []
@@ -420,7 +390,6 @@ def fig_normalized_ensemble_extended(
     if not rows:
         fig = go.Figure()
         fig.update_layout(title=title, annotations=[dict(text="No data", showarrow=False)])
-        apply_plotly_theme(fig, template)
         return fig
     long = pd.concat(rows, ignore_index=True)
     long["life_bin"] = (long["life"] * 99).round().astype(int).clip(0, 99)
@@ -447,5 +416,4 @@ def fig_normalized_ensemble_extended(
         margin=dict(l=50, r=20, t=60, b=40),
     )
     fig.update_xaxes(title_text="Normalized life (0=start, 1=last cycle)", row=nrows, col=1)
-    apply_plotly_theme(fig, template)
     return fig

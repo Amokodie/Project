@@ -63,6 +63,11 @@ from eda_charts import (
 from ui_theme import hero_engineering_ribbon, inject_engineering_theme, plotly_template
 
 
+def _plotly(fig: go.Figure, tpl: str) -> go.Figure:
+    """Match Plotly paper/plot/axes to Appearance (theme applied here so eda_charts stays argument-free)."""
+    return apply_plotly_theme(fig, tpl)
+
+
 def _mermaid_src(block: str) -> str:
     """Strip Python indentation so Mermaid sees node ids at column 0 (Mermaid 10 is strict)."""
     return textwrap.dedent(block).strip()
@@ -324,8 +329,7 @@ Below, pick engines and sensors to visualize trajectories. Sensor names follow c
         )
     fig.update_layout(height=520, margin=dict(l=40, r=20, t=40, b=40), legend_title_text="Engine")
     fig.update_xaxes(title_text="Flight cycle", row=2, col=1)
-    apply_plotly_theme(fig, tpl)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(_plotly(fig, tpl), use_container_width=True)
 
     st.info(
         "**Reading the plot:** Rising temperature-like traces and falling pressure-margin proxies often accompany "
@@ -383,14 +387,14 @@ Sensors with **near-zero variance** are listed below and **excluded** from corre
     st.markdown("#### Correlation matrix (Pearson) — varying sensors only")
     st.caption("Large tables are **row-sampled** for speed (see plot title).")
     st.plotly_chart(
-        fig_correlation_heatmap(base, f"{fd} — sensor–sensor | {split_label}", template=tpl),
+        _plotly(fig_correlation_heatmap(base, f"{fd} — sensor–sensor | {split_label}"), tpl),
         use_container_width=True,
     )
 
     st.markdown("#### Trend strength: |corr(sensor, cycle)| (fleet-wide)")
     st.caption("Higher values suggest the sensor tracks **cycle time** in this split (useful RUL feature candidates).")
     st.plotly_chart(
-        fig_sensor_cycle_correlation(base, f"{fd} | {split_label}", template=tpl),
+        _plotly(fig_sensor_cycle_correlation(base, f"{fd} | {split_label}"), tpl),
         use_container_width=True,
     )
 
@@ -399,32 +403,32 @@ Sensors with **near-zero variance** are listed below and **excluded** from corre
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(
-                fig_max_cycle_per_unit(train_df, f"{fd} — training (run-to-failure)", template=tpl),
+                _plotly(fig_max_cycle_per_unit(train_df, f"{fd} — training (run-to-failure)"), tpl),
                 use_container_width=True,
             )
         with c2:
             st.plotly_chart(
-                fig_max_cycle_per_unit(test_df, f"{fd} — test (censored)", template=tpl),
+                _plotly(fig_max_cycle_per_unit(test_df, f"{fd} — test (censored)"), tpl),
                 use_container_width=True,
             )
         h1, h2 = st.columns(2)
         with h1:
             st.plotly_chart(
-                fig_run_length_histogram(train_df, f"{fd} — run length distribution (train)", template=tpl),
+                _plotly(fig_run_length_histogram(train_df, f"{fd} — run length distribution (train)"), tpl),
                 use_container_width=True,
             )
         with h2:
             st.plotly_chart(
-                fig_run_length_histogram(test_df, f"{fd} — run length distribution (test)", template=tpl),
+                _plotly(fig_run_length_histogram(test_df, f"{fd} — run length distribution (test)"), tpl),
                 use_container_width=True,
             )
     else:
         st.plotly_chart(
-            fig_max_cycle_per_unit(base, f"{fd} — last cycle per engine", template=tpl),
+            _plotly(fig_max_cycle_per_unit(base, f"{fd} — last cycle per engine"), tpl),
             use_container_width=True,
         )
         st.plotly_chart(
-            fig_run_length_histogram(base, f"{fd} — run length distribution", template=tpl),
+            _plotly(fig_run_length_histogram(base, f"{fd} — run length distribution"), tpl),
             use_container_width=True,
         )
 
@@ -432,32 +436,33 @@ Sensors with **near-zero variance** are listed below and **excluded** from corre
     cset1, cset2 = st.columns(2)
     with cset1:
         st.plotly_chart(
-            fig_settings_2d(base, f"{fd} — settings 1 vs 2 (color=cycle)", template=tpl),
+            _plotly(fig_settings_2d(base, f"{fd} — settings 1 vs 2 (color=cycle)"), tpl),
             use_container_width=True,
         )
     with cset2:
         st.plotly_chart(
-            fig_settings_3d(base, f"{fd} — settings 1–3 (3D)", template=tpl),
+            _plotly(fig_settings_3d(base, f"{fd} — settings 1–3 (3D)"), tpl),
             use_container_width=True,
         )
 
     st.markdown("#### Sensor variability (global std per channel)")
-    st.plotly_chart(fig_sensor_std_bar(base, f"{fd} — per-sensor std", template=tpl), use_container_width=True)
+    st.plotly_chart(_plotly(fig_sensor_std_bar(base, f"{fd} — per-sensor std"), tpl), use_container_width=True)
 
     if train_df is not None and test_df is not None:
         st.markdown("#### Train vs test — last-cycle value (same sensor)")
         v_opts = non_constant_sensors(train_df) or sensor_columns(train_df)
         cmp_s = st.selectbox("Sensor for train/test comparison", v_opts, index=min(3, len(v_opts) - 1), key="tt_cmp")
         st.plotly_chart(
-            fig_train_test_last_overlay(
-                train_df, test_df, cmp_s, f"{fd} — {cmp_s} at last observed cycle", template=tpl
+            _plotly(
+                fig_train_test_last_overlay(train_df, test_df, cmp_s, f"{fd} — {cmp_s} at last observed cycle"),
+                tpl,
             ),
             use_container_width=True,
         )
 
     if rul is not None and len(rul):
         st.markdown("#### True RUL (test engines)")
-        st.plotly_chart(fig_rul_overview(rul, f"{fd} — RUL_FD{fd[-3:]}.txt", template=tpl), use_container_width=True)
+        st.plotly_chart(_plotly(fig_rul_overview(rul, f"{fd} — RUL_FD{fd[-3:]}.txt"), tpl), use_container_width=True)
 
     st.markdown("#### Ensemble degradation shape — mean vs normalized engine life")
     v_all = non_constant_sensors(base)
@@ -473,15 +478,16 @@ Sensors with **near-zero variance** are listed below and **excluded** from corre
     )
     if pick_life:
         st.plotly_chart(
-            fig_normalized_ensemble_extended(
-                base, pick_life, f"{fd} — fleet-mean trajectory | {split_label}", template=tpl
+            _plotly(
+                fig_normalized_ensemble_extended(base, pick_life, f"{fd} — fleet-mean trajectory | {split_label}"),
+                tpl,
             ),
             use_container_width=True,
         )
 
     st.markdown("#### PCA — last snapshot (engines as points)")
     st.caption("Standardized **varying** sensors at each engine’s **last** cycle; PC axes from SVD.")
-    st.plotly_chart(fig_pca_last_snapshot(base, f"{fd} | {split_label}", template=tpl), use_container_width=True)
+    st.plotly_chart(_plotly(fig_pca_last_snapshot(base, f"{fd} | {split_label}"), tpl), use_container_width=True)
 
     s_opts = non_constant_sensors(base)
     if len(s_opts) >= 2:
@@ -489,7 +495,7 @@ Sensors with **near-zero variance** are listed below and **excluded** from corre
         s1 = st.selectbox("X sensor", s_opts, index=0, key="pair_x")
         s2 = st.selectbox("Y sensor", s_opts, index=min(1, len(s_opts) - 1), key="pair_y")
         st.plotly_chart(
-            fig_pair_sensors_last_snapshot(base, s1, s2, f"{fd} — final point per engine", template=tpl),
+            _plotly(fig_pair_sensors_last_snapshot(base, s1, s2, f"{fd} — final point per engine"), tpl),
             use_container_width=True,
         )
 
@@ -533,10 +539,9 @@ Scores below are **illustrative** for discussion—replace with your measured me
         margin=dict(l=40, r=40, t=40, b=40),
         title="Radar — five engineering dimensions (demo scores)",
     )
-    apply_plotly_theme(fig, tpl)
     c1, c2 = st.columns([1, 1])
     with c1:
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(_plotly(fig, tpl), use_container_width=True)
     with c2:
         st.dataframe(
             pd.DataFrame({"Dimension": dimensions, "Score (0–100)": scores, "Discussion hook": notes}),
@@ -636,16 +641,16 @@ or **PINNs** (supervised fit + physics / wear residuals). Curves and radars are 
     )
 
     st.markdown("#### Illustrative training dynamics (three families)")
-    st.plotly_chart(fig_training_loss_curves(template=tpl), use_container_width=True)
+    st.plotly_chart(_plotly(fig_training_loss_curves(), tpl), use_container_width=True)
 
     r1, r2 = st.columns(2)
     with r1:
-        st.plotly_chart(fig_radar_three_way(template=tpl), use_container_width=True)
+        st.plotly_chart(_plotly(fig_radar_three_way(), tpl), use_container_width=True)
     with r2:
-        st.plotly_chart(fig_loss_components_bar(template=tpl), use_container_width=True)
+        st.plotly_chart(_plotly(fig_loss_components_bar(), tpl), use_container_width=True)
 
     st.markdown("#### Intuition — convolution vs attention vs wear channel")
-    st.plotly_chart(fig_sensor_window_physics_attention(template=tpl), use_container_width=True)
+    st.plotly_chart(_plotly(fig_sensor_window_physics_attention(), tpl), use_container_width=True)
 
     mm_theme = "neutral" if st.session_state.get("ui_theme", "dark") == "light" else "dark"
     # Subgraph IDs must not clash with link sources; dedent so lines start at column 0.

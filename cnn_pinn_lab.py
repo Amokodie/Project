@@ -7,18 +7,13 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from plotly_theme import apply_plotly_theme
+# Neutral defaults; Streamlit applies `plotly_theme.apply_plotly_theme` in app.py.
+_PAPER = "rgba(0,0,0,0)"
+_PLOT = "rgba(15,23,42,0.4)"
 
 
-def _paper_plot_bg(template: str) -> tuple[str, str]:
-    if template == "plotly_white":
-        return "rgba(0,0,0,0)", "rgba(248,250,252,0.85)"
-    return "rgba(0,0,0,0)", "rgba(15,23,42,0.4)"
-
-
-def fig_training_loss_curves(template: str = "plotly_dark", epochs: int = 120) -> go.Figure:
+def fig_training_loss_curves(epochs: int = 120) -> go.Figure:
     """Synthetic validation loss — CNN, Transformer encoder, PINN."""
-    paper, plot_bg = _paper_plot_bg(template)
     e = np.arange(0, epochs + 1)
     rng = np.random.default_rng(42)
     cnn = 0.62 * np.exp(-e / 38.0) + 0.026 + rng.normal(0, 0.004, len(e))
@@ -48,18 +43,16 @@ def fig_training_loss_curves(template: str = "plotly_dark", epochs: int = 120) -
         xaxis_title="Epoch",
         yaxis_title="Loss (arbitrary units)",
         height=440,
-        template=template,
-        paper_bgcolor=paper,
-        plot_bgcolor=plot_bg,
+        paper_bgcolor=_PAPER,
+        plot_bgcolor=_PLOT,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         margin=dict(l=50, r=20, t=60, b=40),
     )
-    return apply_plotly_theme(fig, template)
+    return fig
 
 
-def fig_radar_three_way(template: str = "plotly_dark") -> go.Figure:
+def fig_radar_three_way() -> go.Figure:
     """Qualitative radar — CNN vs Transformer vs PINN."""
-    paper, _ = _paper_plot_bg(template)
     cats = [
         "Multi-regime<br>(FD004)",
         "Long-range<br>dependencies",
@@ -102,22 +95,20 @@ def fig_radar_three_way(template: str = "plotly_dark") -> go.Figure:
             fillcolor="rgba(34,211,238,0.18)",
         )
     )
-    grid = "rgba(148,163,184,0.35)" if template == "plotly_dark" else "rgba(100,116,139,0.35)"
+    grid = "rgba(148,163,184,0.35)"
     fig.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 100], gridcolor=grid)),
         showlegend=True,
         height=500,
-        template=template,
-        paper_bgcolor=paper,
+        paper_bgcolor=_PAPER,
         title="Qualitative comparison — discussion scores only",
         margin=dict(l=40, r=40, t=50, b=40),
     )
-    return apply_plotly_theme(fig, template)
+    return fig
 
 
-def fig_loss_components_bar(template: str = "plotly_dark") -> go.Figure:
+def fig_loss_components_bar() -> go.Figure:
     """Three illustrative model families."""
-    paper, plot_bg = _paper_plot_bg(template)
     df = pd.DataFrame(
         {
             "Model": ["1D-CNN", "Temporal Transformer", "PINN (hybrid)"],
@@ -137,18 +128,16 @@ def fig_loss_components_bar(template: str = "plotly_dark") -> go.Figure:
         title="Illustrative loss-term emphasis (%)",
         yaxis_title="Relative emphasis",
         height=400,
-        template=template,
-        paper_bgcolor=paper,
-        plot_bgcolor=plot_bg,
+        paper_bgcolor=_PAPER,
+        plot_bgcolor=_PLOT,
         legend=dict(orientation="h", yanchor="bottom", y=1.05, x=0),
         margin=dict(l=50, r=20, t=60, b=40),
     )
-    return apply_plotly_theme(fig, template)
+    return fig
 
 
-def fig_sensor_window_physics_attention(template: str = "plotly_dark") -> go.Figure:
+def fig_sensor_window_physics_attention() -> go.Figure:
     """CNN window vs PINN vs fake attention weights (Transformer intuition)."""
-    paper, plot_bg = _paper_plot_bg(template)
     fig = make_subplots(
         rows=1,
         cols=3,
@@ -180,9 +169,8 @@ def fig_sensor_window_physics_attention(template: str = "plotly_dark") -> go.Fig
     fig.update_yaxes(title_text="Residual", row=1, col=3)
     fig.update_layout(
         height=380,
-        template=template,
-        paper_bgcolor=paper,
-        plot_bgcolor=plot_bg,
+        paper_bgcolor=_PAPER,
+        plot_bgcolor=_PLOT,
         margin=dict(l=40, r=20, t=50, b=40),
     )
-    return apply_plotly_theme(fig, template)
+    return fig
