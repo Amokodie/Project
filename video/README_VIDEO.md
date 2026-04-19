@@ -89,7 +89,8 @@ python -m deck2video video/engine_rul_video.md \
 | `python: command not found` | Reopen Git Bash; check `which python` points into `deck2video/`. Re-run `source deck2video/setup.sh`. |
 | `ffmpeg not found` | `winget install Gyan.FFmpeg`, reopen terminal. |
 | `marp: command not found` | `npm install -g @marp-team/marp-cli`. |
-| Images don't appear on slides | Confirm paths in `engine_rul_video.md` resolve from `video/` — they use `../output/...`. |
+| Images don't appear on slides | (1) Confirm paths in `engine_rul_video.md` resolve from `video/` — they use `../output/...`. (2) Marp blocks local file:// by default; `deck2video/deck2video/marp_renderer.py` must pass `--allow-local-files` to the marp invocation. If you re-cloned deck2video, re-apply this patch. |
+| `FileNotFoundError: [WinError 2]` on marp | Windows subprocess can't resolve extensionless `marp`. In `deck2video/deck2video/marp_renderer.py`, use `shutil.which("marp.cmd") or shutil.which("marp")` instead of just `"marp"`. |
 | TTS mispronounces "PINN", "FD001" | Speaker notes already spell these phonetically ("P I N N", "F D zero zero one"). Add more phonetic hints in `<!-- note: ... -->` blocks. |
 | Chatterbox download hangs | Kill and retry; weights are cached to `~/.cache/` after first successful download. |
 

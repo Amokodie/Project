@@ -18,7 +18,7 @@ style: "section { font-family: 'Inter', 'Segoe UI', sans-serif; padding: 60px 80
 
 <br>
 
-**Assignment 2 — RCSSTEAP, Beihang University**
+**Final Project — RCSSTEAP, Beihang University**
 
 Kodie Amo Kwame (LS2525226)
 Sumara Alfred Salifu (LS2525245)
