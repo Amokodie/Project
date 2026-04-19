@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engine Failure &amp; Remaining Useful Life — Physics-Informed Deep Learning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --surface: #0f172a;
+      --surface-2: #111c32;
+      --fg: #e6eaf2;
+      --muted: #94a3b8;
+      --dim: #64748b;
+      --h1: #ffffff;
+      --accent: #7dd3fc;
+      --accent-2: #ffb347;
+      --accent-3: #ffd166;
+      --good: #4ade80;
+      --bad: #f87171;
+      --border: rgba(125, 211, 252, 0.12);
+      --border-strong: rgba(125, 211, 252, 0.28);
+      --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: radial-gradient(ellipse at top, #142034 0%, var(--bg) 60%);
+      color: var(--fg);
+      min-height: 100vh;
+      padding: 24px 12px 48px;
+      line-height: 1.55;
+    }
+    .sheet {
+      max-width: 1180px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .ribbon {
+      height: 4px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        #0ea5e9 25%,
+        #38bdf8 50%,
+        #22d3ee 75%,
+        transparent 100%
+      );
+    }
+    header.hero {
+      padding: 40px 44px 28px;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(ellipse at 30% 20%, #1f3a68 0%, transparent 60%);
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--h1);
+      line-height: 1.1;
+    }
+    .tagline {
+      margin: 0 0 20px;
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 780px;
+    }
+    .authors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .authors .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(125, 211, 252, 0.08);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--fg);
+    }
+    .authors .chip code {
+      color: var(--accent);
+      background: transparent;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+    }
+
+    .videobox {
+      padding: 24px 44px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .videobox h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .videobox .frame {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      background: #000;
+      aspect-ratio: 16 / 9;
+    }
+    .videobox video { width: 100%; height: 100%; display: block; }
+    .video-note {
+      margin: 10px 2px 0;
+      color: var(--dim);
+      font-size: 0.82rem;
+    }
+
+    .toc {
+      padding: 20px 44px;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 18px;
+    }
+    .toc a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      padding: 6px 0;
+      border-bottom: 1px dashed transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .toc a:hover { color: var(--accent); border-bottom-color: var(--border-strong); }
+    .toc a .num {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      margin-right: 8px;
+    }
+
+    main { padding: 8px 44px 40px; }
+
+    section.slide {
+      padding: 32px 0;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 20px;
+    }
+    section.slide:last-child { border-bottom: 0; }
+    .slide-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .slide-num {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.9rem;
+      font-weight: 500;
+      background: rgba(125, 211, 252, 0.08);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 6px;
+    }
+    h2.slide-title {
+      margin: 0;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--h1);
+      border-left: 4px solid var(--accent-2);
+      padding-left: 14px;
+    }
+    .slide-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .slide-body.single { grid-template-columns: 1fr; }
+    .slide-body.images-2 figure { width: 100%; }
+    .slide-content p { margin: 0 0 14px; }
+    .slide-content ul { padding-left: 20px; margin: 0 0 14px; }
+    .slide-content li { margin: 6px 0; }
+    .slide-content strong { color: var(--accent-3); font-weight: 600; }
+    .slide-content code {
+      background: #0a1426;
+      color: var(--accent-3);
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.86rem;
+      border: 1px solid var(--border);
+    }
+    .slide-content blockquote {
+      margin: 14px 0;
+      padding: 12px 16px;
+      background: rgba(125, 211, 252, 0.05);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      color: #cbd5e1;
+      font-style: italic;
+    }
+    figure { margin: 0; }
+    figure img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      display: block;
+      background: #0a1426;
+    }
+    figure.dual { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    figure.dual img { width: 100%; }
+    figcaption {
+      text-align: center;
+      color: var(--dim);
+      font-size: 0.8rem;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    .narration {
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+    .narration .label {
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.68rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 0.95rem;
+    }
+    .metrics-table th, .metrics-table td {
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .metrics-table th {
+      color: var(--accent);
+      border-bottom: 2px solid var(--border-strong);
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .metrics-table td { border-bottom: 1px solid var(--border); }
+    .metrics-table td.num { font-family: "JetBrains Mono", monospace; text-align: right; }
+    .metrics-table tr.best td { color: var(--accent-3); font-weight: 600; }
+    .metrics-table td.delta-good { color: var(--good); font-weight: 600; font-family: "JetBrains Mono", monospace; text-align: right; }
+
+    footer {
+      padding: 24px 44px;
+      color: var(--dim);
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 760px) {
+      .slide-body { grid-template-columns: 1fr; }
+      figure.dual { grid-template-columns: 1fr; }
+      header.hero, .videobox, .toc, main, footer { padding-left: 20px; padding-right: 20px; }
+      h1 { font-size: 1.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="ribbon"></div>
+
+    <header class="hero">
+      <span class="eyebrow">Final Project · RCSSTEAP · Beihang University</span>
+      <h1>Engine Failure &amp; Remaining Useful Life Prediction<br />with Physics-Informed Deep Learning</h1>
+      <p class="tagline">NASA C-MAPSS turbofan dataset — a Convolutional Neural Network baseline versus a Physics-Informed Neural Network. The physics prior cuts RMSE by <strong>21.6&nbsp;%</strong> and the asymmetric NASA score by <strong>69.4&nbsp;%</strong>.</p>
+      <div class="authors">
+        <span class="chip">Kodie Amo Kwame <code>LS2525226</code></span>
+        <span class="chip">Sumara Alfred Salifu <code>LS2525245</code></span>
+        <span class="chip">Peta Mimi Precious <code>LS2525255</code></span>
+      </div>
+    </header>
+
+    <div class="videobox">
+      <h2>Narrated Video · 3 min 13 s · 1920×1080</h2>
+      <div class="frame">
+        <video controls preload="metadata" poster="../output/model_comparison.png">
+          <source src="../output/engine_rul_video.mp4" type="video/mp4" />
+          Your browser does not support the HTML5 video tag.
+        </video>
+      </div>
+      <p class="video-note">If the video does not play inline, open <code>output/engine_rul_video.mp4</code> directly.</p>
+    </div>
+
+    <nav class="toc" aria-label="Slide index">
+      <a href="#s1"><span class="num">01</span>Introduction</a>
+      <a href="#s2"><span class="num">02</span>The C-MAPSS Dataset</a>
+      <a href="#s3"><span class="num">03</span>Remaining Useful Life</a>
+      <a href="#s4"><span class="num">04</span>Two Models</a>
+      <a href="#s5"><span class="num">05</span>The Physics Loss</a>
+      <a href="#s6"><span class="num">06</span>Training Setup</a>
+      <a href="#s7"><span class="num">07</span>Predictions vs Ground Truth</a>
+      <a href="#s8"><span class="num">08</span>Quantitative Results</a>
+      <a href="#s9"><span class="num">09</span>Error Analysis</a>
+      <a href="#s10"><span class="num">10</span>Conclusion</a>
+    </nav>
+
+    <main>
+      <section class="slide" id="s1">
+        <div class="slide-head">
+          <span class="slide-num">01 / 10</span>
+          <h2 class="slide-title">Introduction</h2>
+        </div>
+        <div class="slide-body single">
+          <div class="slide-content">
+            <p>Jet engines fail. When they do, lives and millions of dollars are at stake. This final project predicts engine failure using <strong>physics-informed deep learning</strong> on NASA's turbofan degradation dataset.</p>
+            <p>We compare a standard <strong>Convolutional Neural Network (CNN)</strong> against a <strong>Physics-Informed Neural Network (PINN)</strong>, and show that embedding physical laws into the loss function produces safer, more accurate predictions of remaining useful life.</p>
+            <div class="narration">
+              <span class="label">Narration</span>
+              Jet engines fail. When they do, lives and millions of dollars are at stake. This final project predicts engine failure using physics-informed deep learning on NASA's turbofan dataset. We compare a standard Convolutional Neural Network against a Physics-Informed Neural Network, and show that embedding physical laws into the loss function produces safer, more accurate predictions of remaining useful life.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="s2">
+        <div class="slide-head">
+          <span class="slide-num">02 / 10</span>
+          <h2 class="slide-title">The Dataset — NASA C-MAPSS</h2>
+        </div>
+        <div class="slide-body">
+          <div class="slide-content">
+            <p><strong>C-MAPSS</strong> = <em>Commercial Modular Aero-Propulsion System Simulation</em></p>
+            <ul>
+              <li><strong>4 fault datasets:</strong> FD001–FD004 (increasing complexity)</li>
+              <li><strong>21 sensors:</strong> temperatures, pressures, rotational speeds</li>
+              <li><strong>3 operating settings:</strong> altitude, Mach, throttle</li>
+              <li><strong>100 training + 100 test engines</strong> (FD001)</li>
+              <li>Each engine runs until degradation-induced failure</li>
+            </ul>
+            <blockquote>Sensors capture the gradual fingerprint of wear — hotter exhaust gas, lower core speed, rising fuel flow.</blockquote>
+            <div class="narration">
+              <span class="label">Narration</span>
+              NASA's C-MAPSS dataset — Commercial Modular Aero-Propulsion System Simulation — spans four fault datasets, FD001 through FD004, in rising complexity. Each engine is monitored with twenty-one sensors and three operating settings. We focus on FD001: one hundred training engines and one hundred test engines, every one running until failure.
+            </div>
+          </div>
+          <figure>
+            <img src="../output/sensor_trajectories.png" alt="Sensor trajectories across an engine's life cycle" />
+            <figcaption>Sensor trajectories showing degradation fingerprint</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide" id="s3">
+        <div class="slide-head">
+          <span class="slide-num">03 / 10</span>
+          <h2 class="slide-title">What Is Remaining Useful Life?</h2>
+        </div>
+        <div class="slide-body">
+          <div class="slide-content">
+            <p><strong>Remaining Useful Life (RUL)</strong> — the number of operating cycles an engine has left before it fails.</p>
+            <ul>
+              <li><strong>Healthy phase:</strong> RUL is effectively constant</li>
+              <li><strong>Degradation phase:</strong> RUL drops linearly</li>
+              <li>We apply a <strong>piecewise-linear cap at 125 cycles</strong> so the model focuses on the informative regime</li>
+              <li>RUL is the fundamental quantity for <em>predictive maintenance</em> and <em>condition-based overhaul</em></li>
+            </ul>
+            <div class="narration">
+              <span class="label">Narration</span>
+              Remaining Useful Life — abbreviated RUL — is the number of cycles an engine has left before failure. Early in life, sensors show almost no signal, so true RUL is effectively constant. Only the degradation phase is informative, so we cap RUL at one hundred twenty-five cycles. This is the key quantity for predictive maintenance.
+            </div>
+          </div>
+          <figure>
+            <img src="../output/rul_trajectory_example.png" alt="Example RUL trajectory showing healthy phase and degradation phase" />
+            <figcaption>RUL trajectory with the piecewise-linear 125-cycle cap</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide" id="s4">
+        <div class="slide-head">
+          <span class="slide-num">04 / 10</span>
+          <h2 class="slide-title">Two Models, One Task</h2>
+        </div>
+        <div class="slide-body">
+          <div class="slide-content">
+            <h3 style="color: var(--accent); font-size: 1rem; margin: 0 0 6px;">1. Baseline — Convolutional Neural Network (CNN)</h3>
+            <p><code>Conv1D(16, k=5) → ReLU → GlobalAvgPool → Dense(32) → Dense(1)</code></p>
+            <p>Pure data-driven; learns only from sensor windows.</p>
+            <h3 style="color: var(--accent); font-size: 1rem; margin: 16px 0 6px;">2. Physics-Informed Neural Network (PINN)</h3>
+            <p><code>Dense(96) → ReLU → Dense(48) → ReLU → Dense(1)</code></p>
+            <p><strong>+ physics loss</strong> on adjacent-cycle pairs.</p>
+            <div class="narration">
+              <span class="label">Narration</span>
+              We built two models. A baseline one-dimensional Convolutional Neural Network — CNN — with sixteen filters, a Rectified Linear Unit, global average pooling, and two dense layers. And a Physics-Informed Neural Network — PINN — a multi-layer perceptron that adds a physics loss on adjacent cycle pairs.
+            </div>
+          </div>
+          <figure>
+            <img src="../output/network_architectures.png" alt="Side-by-side CNN and PINN architectures" />
+            <figcaption>CNN baseline (left) vs PINN (right)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide" id="s5">
+        <div class="slide-head">
+          <span class="slide-num">05 / 10</span>
+          <h2 class="slide-title">The Physics Loss — Injecting Domain Knowledge</h2>
+        </div>
+        <div class="slide-body single">
+          <div class="slide-content">
+            <p>Applied on <strong>adjacent-cycle window pairs</strong> <code>(t, t+1)</code>:</p>
+            <h3 style="color: var(--accent); font-size: 1rem; margin: 14px 0 4px;">Monotonicity penalty</h3>
+            <p><code>L_mono = ReLU( RUL(t+1) − RUL(t) )²</code></p>
+            <blockquote>RUL must never <em>increase</em> — a degraded engine cannot un-degrade.</blockquote>
+            <h3 style="color: var(--accent); font-size: 1rem; margin: 14px 0 4px;">Drift penalty</h3>
+            <p><code>L_drift = ( RUL(t) − RUL(t+1) − 1 )²</code></p>
+            <blockquote>RUL must drop by <em>exactly one cycle</em> per cycle of operation.</blockquote>
+            <p style="margin-top: 18px;"><strong>Total loss:</strong> <code>L = L_MSE + 0.15 · L_mono + 0.05 · L_drift</code></p>
+            <div class="narration">
+              <span class="label">Narration</span>
+              Two physics terms on adjacent cycle pairs. The monotonicity penalty discourages RUL going up — a degraded engine cannot un-degrade. The drift penalty enforces RUL dropping by exactly one per cycle, the literal definition. Total loss is mean squared error plus lambda 0.15 times monotonicity plus 0.05 times drift.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="s6">
+        <div class="slide-head">
+          <span class="slide-num">06 / 10</span>
+          <h2 class="slide-title">Training Setup</h2>
+        </div>
+        <div class="slide-body">
+          <div class="slide-content">
+            <ul>
+              <li><strong>Window length:</strong> 30 cycles · <strong>Stride:</strong> 1</li>
+              <li><strong>Training windows:</strong> 14,207 · <strong>Validation:</strong> 3,524</li>
+              <li><strong>Feature channels:</strong> 18 (dropped 6 constant sensors)</li>
+              <li><strong>CNN:</strong> 18 epochs · <strong>PINN:</strong> 22 epochs</li>
+              <li><strong>Total wall time:</strong> <strong>20.5 seconds</strong> on CPU (pure NumPy)</li>
+              <li>PINN converges to lower validation loss — the physics prior acts as a <em>free regularizer</em></li>
+            </ul>
+            <div class="narration">
+              <span class="label">Narration</span>
+              Sliding windows of thirty cycles produce 14,207 training windows and 3,524 validation windows, across eighteen feature channels. Total training time: 20.5 seconds on CPU, using pure NumPy. The PINN converges to lower validation loss — the physics prior acts as a free regularizer.
+            </div>
+          </div>
+          <figure>
+            <img src="../output/training_curves.png" alt="Training and validation loss curves for CNN and PINN" />
+            <figcaption>Training &amp; validation loss — CNN vs PINN</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide" id="s7">
+        <div class="slide-head">
+          <span class="slide-num">07 / 10</span>
+          <h2 class="slide-title">Predictions vs Ground Truth</h2>
+        </div>
+        <div class="slide-body single">
+          <div class="slide-content">
+            <figure class="dual" style="margin-bottom: 18px;">
+              <div>
+                <img src="../output/pred_vs_actual_cnn.png" alt="CNN predicted vs actual RUL scatter" />
+                <figcaption>CNN — scattered, overshoots at low RUL</figcaption>
+              </div>
+              <div>
+                <img src="../output/pred_vs_actual_pinn.png" alt="PINN predicted vs actual RUL scatter" />
+                <figcaption>PINN — hugs the diagonal, especially near end of life</figcaption>
+              </div>
+            </figure>
+            <blockquote>The end-of-life region is where <em>correct</em> predictions matter most — a missed warning there means an in-flight failure.</blockquote>
+            <div class="narration">
+              <span class="label">Narration</span>
+              On one hundred unseen test engines, the CNN predictions scatter and overshoot at low RUL — optimistic exactly when pessimism matters. The PINN predictions hug the diagonal tightly, especially near end of life. That is where a missed warning means in-flight failure, not just a scheduling inconvenience.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="s8">
+        <div class="slide-head">
+          <span class="slide-num">08 / 10</span>
+          <h2 class="slide-title">Quantitative Results</h2>
+        </div>
+        <div class="slide-body">
+          <div class="slide-content">
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th style="text-align: right;">CNN</th>
+                  <th style="text-align: right;">PINN</th>
+                  <th style="text-align: right;">Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>RMSE</strong><br /><span style="color:var(--dim); font-size:0.8rem;">Root Mean Square Error</span></td>
+                  <td class="num">18.68</td>
+                  <td class="num" style="color:var(--accent-3);"><strong>14.64</strong></td>
+                  <td class="delta-good">−21.6 %</td>
+                </tr>
+                <tr>
+                  <td><strong>MAE</strong><br /><span style="color:var(--dim); font-size:0.8rem;">Mean Absolute Error</span></td>
+                  <td class="num">13.69</td>
+                  <td class="num" style="color:var(--accent-3);"><strong>11.14</strong></td>
+                  <td class="delta-good">−18.6 %</td>
+                </tr>
+                <tr>
+                  <td><strong>NASA score</strong><br /><span style="color:var(--dim); font-size:0.8rem;">Asymmetric (late ≫ early)</span></td>
+                  <td class="num">1107.5</td>
+                  <td class="num" style="color:var(--accent-3);"><strong>338.6</strong></td>
+                  <td class="delta-good">−69.4 %</td>
+                </tr>
+              </tbody>
+            </table>
+            <blockquote>The <strong>NASA score</strong> penalizes <em>late</em> predictions ~4× harder than early ones — because in aviation, a late warning is far more costly. This is where physics helps most.</blockquote>
+            <div class="narration">
+              <span class="label">Narration</span>
+              Root Mean Square Error drops from 18.68 to 14.64 — a 21.6 % improvement. Mean Absolute Error drops from 13.69 to 11.14. The NASA score, which punishes late predictions four times harder than early ones, drops from 1107 to 338 — nearly 70 %. This is where physics helps most.
+            </div>
+          </div>
+          <figure>
+            <img src="../output/model_comparison.png" alt="Bar chart comparing CNN and PINN across RMSE, MAE, NASA score" />
+            <figcaption>Model comparison across all three metrics</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide" id="s9">
+        <div class="slide-head">
+          <span class="slide-num">09 / 10</span>
+          <h2 class="slide-title">Error Analysis</h2>
+        </div>
+        <div class="slide-body single">
+          <div class="slide-content">
+            <figure class="dual" style="margin-bottom: 18px;">
+              <div>
+                <img src="../output/error_histogram.png" alt="Error histogram for CNN and PINN" />
+                <figcaption>Error distribution — PINN is tighter and more symmetric</figcaption>
+              </div>
+              <div>
+                <img src="../output/per_engine_rul.png" alt="Per-engine RUL trajectories" />
+                <figcaption>Per-engine RUL — PINN tracks truth smoothly</figcaption>
+              </div>
+            </figure>
+            <ul>
+              <li><strong>Left:</strong> error distribution — PINN is <em>tighter and more symmetric</em>, with fewer large late-predictions</li>
+              <li><strong>Right:</strong> per-engine RUL trajectories — PINN tracks ground truth smoothly, without post-hoc filtering</li>
+              <li>The monotonicity constraint eliminates almost all <em>rising</em> prediction segments</li>
+            </ul>
+            <div class="narration">
+              <span class="label">Narration</span>
+              The PINN error distribution is tighter and more symmetric, with fewer large late predictions — the errors NASA's score punishes most. Per-engine RUL trajectories track ground truth smoothly, with no post-hoc filtering. The monotonicity constraint eliminates almost all rising prediction segments.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="s10">
+        <div class="slide-head">
+          <span class="slide-num">10 / 10</span>
+          <h2 class="slide-title">Conclusion</h2>
+        </div>
+        <div class="slide-body single">
+          <div class="slide-content" style="text-align: center; padding: 20px 40px;">
+            <h3 style="color: var(--accent-2); font-size: 1.7rem; margin: 0 0 10px; font-weight: 700;">Physics-Informed Learning = Safer, More Accurate RUL</h3>
+            <p style="font-size: 1.05rem; color: var(--muted); font-style: italic; margin: 0 auto 20px; max-width: 640px;">
+              A small network with the right prior beats a larger network with none.
+            </p>
+            <p style="color: var(--fg);">
+              <strong>Kodie Amo Kwame</strong> · <strong>Sumara Alfred Salifu</strong> · <strong>Peta Mimi Precious</strong><br />
+              <span style="color: var(--dim);">RCSSTEAP · Beihang University · Final Project</span>
+            </p>
+            <div class="narration" style="text-align: left;">
+              <span class="label">Narration</span>
+              The key takeaway: a small network with the right physical prior beats a larger network with none. Physics-informed learning cut Root Mean Square Error by over 20 %, and the asymmetric NASA score by nearly 70 % — turning a compact neural network into a safer, more accurate estimator for condition-based engine maintenance. Thank you.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Final Project · Engine Failure &amp; RUL Prediction · NASA C-MAPSS FD001</span>
+      <span>RCSSTEAP, Beihang University</span>
+    </footer>
+  </div>
+</body>
+</html>
