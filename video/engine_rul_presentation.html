@@ -334,16 +334,17 @@
       <a href="#s4"><span class="num">04</span>Two Models</a>
       <a href="#s5"><span class="num">05</span>The Physics Loss</a>
       <a href="#s6"><span class="num">06</span>Training Setup</a>
-      <a href="#s7"><span class="num">07</span>Predictions vs Ground Truth</a>
-      <a href="#s8"><span class="num">08</span>Quantitative Results</a>
-      <a href="#s9"><span class="num">09</span>Error Analysis</a>
-      <a href="#s10"><span class="num">10</span>Conclusion</a>
+      <a href="#s7"><span class="num">07</span>Learned CNN Filters</a>
+      <a href="#s8"><span class="num">08</span>Predictions vs Ground Truth</a>
+      <a href="#s9"><span class="num">09</span>Quantitative Results</a>
+      <a href="#s10"><span class="num">10</span>Error Analysis</a>
+      <a href="#s11"><span class="num">11</span>Conclusion</a>
     </nav>
 
     <main>
       <section class="slide" id="s1">
         <div class="slide-head">
-          <span class="slide-num">01 / 10</span>
+          <span class="slide-num">01 / 11</span>
           <h2 class="slide-title">Introduction</h2>
         </div>
         <div class="slide-body single">
@@ -360,7 +361,7 @@
 
       <section class="slide" id="s2">
         <div class="slide-head">
-          <span class="slide-num">02 / 10</span>
+          <span class="slide-num">02 / 11</span>
           <h2 class="slide-title">The Dataset — NASA C-MAPSS</h2>
         </div>
         <div class="slide-body">
@@ -388,7 +389,7 @@
 
       <section class="slide" id="s3">
         <div class="slide-head">
-          <span class="slide-num">03 / 10</span>
+          <span class="slide-num">03 / 11</span>
           <h2 class="slide-title">What Is Remaining Useful Life?</h2>
         </div>
         <div class="slide-body">
@@ -414,7 +415,7 @@
 
       <section class="slide" id="s4">
         <div class="slide-head">
-          <span class="slide-num">04 / 10</span>
+          <span class="slide-num">04 / 11</span>
           <h2 class="slide-title">Two Models, One Task</h2>
         </div>
         <div class="slide-body">
@@ -439,7 +440,7 @@
 
       <section class="slide" id="s5">
         <div class="slide-head">
-          <span class="slide-num">05 / 10</span>
+          <span class="slide-num">05 / 11</span>
           <h2 class="slide-title">The Physics Loss — Injecting Domain Knowledge</h2>
         </div>
         <div class="slide-body single">
@@ -462,7 +463,7 @@
 
       <section class="slide" id="s6">
         <div class="slide-head">
-          <span class="slide-num">06 / 10</span>
+          <span class="slide-num">06 / 11</span>
           <h2 class="slide-title">Training Setup</h2>
         </div>
         <div class="slide-body">
@@ -489,7 +490,34 @@
 
       <section class="slide" id="s7">
         <div class="slide-head">
-          <span class="slide-num">07 / 10</span>
+          <span class="slide-num">07 / 11</span>
+          <h2 class="slide-title">Learned CNN Filters — What the Convolution Sees</h2>
+        </div>
+        <div class="slide-body single">
+          <div class="slide-content">
+            <figure style="margin-bottom: 18px;">
+              <img src="../output/cnn_filters.png" alt="Sixteen learned 1D convolutional filter weights visualized as heatmaps" />
+              <figcaption>The 16 learned Conv1D filters (kernel size 5) visualized as heatmaps. Colour scale from −1 to +1.</figcaption>
+            </figure>
+            <ul>
+              <li>Each small heatmap is <strong>one of the 16 learned filters</strong> from the CNN's single convolutional layer (kernel size 5, 18 input channels)</li>
+              <li>Rows correspond to the 18 feature channels (sensors); columns to the 5 kernel time-steps</li>
+              <li>Red = positive weight, blue = negative weight — the filter <em>fires</em> when the corresponding sensor-time pattern matches</li>
+              <li>Several filters (e.g. 1, 5, 15) show a clear <strong>left-to-right sign flip</strong> across the 5 time-steps — a classic <em>finite-difference / derivative</em> kernel</li>
+              <li>Others (e.g. 3, 7, 14) are nearly uniform in time — <strong>moving-average</strong> style smoothers</li>
+            </ul>
+            <blockquote>The CNN has rediscovered, on its own, the same short-window derivative and moving-average operators that classical prognostics literature constructs by hand.</blockquote>
+            <div class="narration">
+              <span class="label">Commentary</span>
+              This plot answers the interpretability question. A data-driven network is not magical — it is learning finite-difference operators from the sensor time-series. This frames the PINN argument: if the network is going to learn derivative structure anyway, we may as well tell it the physics up front through the loss. Fewer parameters, more reliable, and provably consistent with the problem definition.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="s8">
+        <div class="slide-head">
+          <span class="slide-num">08 / 11</span>
           <h2 class="slide-title">Predictions vs Ground Truth</h2>
         </div>
         <div class="slide-body single">
@@ -513,9 +541,9 @@
         </div>
       </section>
 
-      <section class="slide" id="s8">
+      <section class="slide" id="s9">
         <div class="slide-head">
-          <span class="slide-num">08 / 10</span>
+          <span class="slide-num">09 / 11</span>
           <h2 class="slide-title">Quantitative Results</h2>
         </div>
         <div class="slide-body">
@@ -563,9 +591,9 @@
         </div>
       </section>
 
-      <section class="slide" id="s9">
+      <section class="slide" id="s10">
         <div class="slide-head">
-          <span class="slide-num">09 / 10</span>
+          <span class="slide-num">10 / 11</span>
           <h2 class="slide-title">Error Analysis</h2>
         </div>
         <div class="slide-body single">
@@ -593,9 +621,9 @@
         </div>
       </section>
 
-      <section class="slide" id="s10">
+      <section class="slide" id="s11">
         <div class="slide-head">
-          <span class="slide-num">10 / 10</span>
+          <span class="slide-num">11 / 11</span>
           <h2 class="slide-title">Conclusion</h2>
         </div>
         <div class="slide-body single">
