@@ -1,0 +1,223 @@
+================================================================================
+ PRESENTATION OPENING SCRIPT
+ Final Project -- RCSSTEAP, Beihang University
+ Engine Failure & Remaining Useful Life Prediction
+================================================================================
+
+Three versions below: SHORT (30 s), STANDARD (60-75 s), EXTENDED (90 s).
+Pick the one that matches your time slot. Lines with [pause] mean stop
+for one beat -- it makes you sound confident, not rushed.
+
+
+================================================================================
+ VERSION A -- STANDARD OPENING  (60-75 seconds, recommended)
+================================================================================
+
+"Good [morning / afternoon], Professor, and thank you for having us.
+
+[pause]
+
+My name is [your name], and together with my teammates
+Kodie Amo Kwame, Sumara Alfred Salifu, and Peta Mimi Precious,
+we are presenting our final project for this course at RCSSTEAP,
+Beihang University.
+
+[pause]
+
+Our topic is the prediction of Remaining Useful Life -- RUL -- of
+aircraft turbofan engines, using physics-informed deep learning.
+
+[pause, look up at audience]
+
+Before I explain the method, let me ground it in why it matters.
+
+A single commercial jet engine costs over twenty million dollars,
+and more importantly, when one fails in flight, lives are at stake.
+The entire discipline of Prognostics and Health Management, or PHM,
+exists to answer one question:
+    how many operating cycles does this engine have LEFT
+    before it fails?
+
+That number is called Remaining Useful Life, or RUL, and predicting
+it accurately -- not optimistically, not late -- is one of the most
+important open problems in aviation safety.
+
+[pause]
+
+In this project, we build and compare two neural-network models on
+NASA's C-MAPSS turbofan degradation benchmark. The first is a
+standard Convolutional Neural Network. The second is a Physics-
+Informed Neural Network -- a PINN -- which bakes the physical
+definition of RUL directly into its loss function.
+
+[pause -- transition]
+
+Our headline result, which I will defend in detail today, is this:
+
+    the physics-informed model cuts Root Mean Square Error by
+    twenty-one percent, and the asymmetric NASA score by almost
+    seventy percent, WITHOUT adding a single convolutional layer.
+
+Over the next few minutes, we will walk through the dataset, the
+two architectures, the physics loss, the training, and the results.
+
+[pause]
+
+Let us begin with the dataset."
+
+
+================================================================================
+ VERSION B -- SHORT OPENING  (about 30 seconds, when time is tight)
+================================================================================
+
+"Good [morning / afternoon], Professor.
+
+I am [your name]. With my teammates Kodie Amo Kwame, Sumara Alfred
+Salifu, and Peta Mimi Precious, we present our final project from
+RCSSTEAP, Beihang University: predicting the Remaining Useful Life
+of aircraft engines using physics-informed deep learning.
+
+Jet engines fail. When they do, lives and millions of dollars are
+at stake. Our project shows that embedding two simple physics
+constraints into a neural network's loss function cuts prediction
+error by twenty-one percent, and the asymmetric aviation safety
+score by almost seventy percent -- with a smaller, not larger,
+network.
+
+[pause]
+
+Let us begin."
+
+
+================================================================================
+ VERSION C -- EXTENDED OPENING  (about 90 seconds)
+================================================================================
+
+"Good [morning / afternoon], Professor, and thank you for the
+opportunity to present our work.
+
+[pause]
+
+My name is [your name]. My teammates are Kodie Amo Kwame, Sumara
+Alfred Salifu, and Peta Mimi Precious. Together we form our project
+group at the Research Centre of Satellite Technology and its
+Applications -- RCSSTEAP -- here at Beihang University.
+
+[pause]
+
+Our final project investigates a question at the intersection of
+aviation safety, machine learning, and physics:
+
+    Can we predict, ahead of time, when a jet engine is about to
+    fail -- and can physics-based reasoning make that prediction
+    more trustworthy than pure data-driven deep learning?
+
+[pause]
+
+The quantity we are predicting is called Remaining Useful Life,
+abbreviated RUL. In simple terms, RUL is the number of operating
+cycles an engine has left before failure. Getting it right matters
+in two directions. Predict too LATE and you risk an in-flight
+failure. Predict too EARLY and you waste maintenance resources
+replacing healthy hardware.
+
+[pause]
+
+To study this, we use NASA's Commercial Modular Aero-Propulsion
+System Simulation -- C-MAPSS -- which simulates fleets of turbofan
+engines, each instrumented with twenty-one sensors, each flown to
+failure. We focus on the FD001 subset: one hundred training
+engines and one hundred unseen test engines.
+
+[pause]
+
+We built two models. A baseline one-dimensional Convolutional
+Neural Network, trained only from sensor data. And a Physics-
+Informed Neural Network, or PINN -- a simpler architecture, but
+with two physical laws baked into its loss function:
+
+   one, RUL must never INCREASE -- a degraded engine cannot
+   un-degrade;
+
+   two, RUL must decrease by exactly one cycle per cycle of
+   operation, because that is the literal definition of RUL.
+
+[pause]
+
+The central finding of the project is that this second model, the
+PINN, cuts Root Mean Square Error by twenty-one percent, and cuts
+the asymmetric NASA scoring function -- which penalizes late
+predictions four times harder than early ones -- by almost seventy
+percent. It achieves this with fewer structural priors than the
+CNN, which means the improvement is attributable to physics, not
+to model capacity.
+
+[pause]
+
+Over the next three minutes, we will walk you through the dataset,
+the two architectures, the physics-informed loss, training and
+results, and finally interpretability -- what the network itself
+learned about degradation.
+
+[pause, look up]
+
+Let us begin."
+
+
+================================================================================
+ DELIVERY TIPS
+================================================================================
+
+*   Start with your feet planted, hands relaxed. Look at the
+    professor, not the slide.
+
+*   Say "RUL" as the letters R-U-L, not as a word. Same for PINN
+    (P-I-N-N), CNN (C-N-N), NASA (NASA is the only one pronounced
+    as a word).
+
+*   At every [pause] marker, count "one-thousand-one" silently.
+    It feels long to you but sounds confident to the listener.
+
+*   The line "twenty-one percent, and the asymmetric NASA score by
+    almost seventy percent" is your money line. Slow down on it.
+    Emphasize "seventy percent".
+
+*   If you forget a word mid-sentence, DO NOT say "um" or "sorry".
+    Just pause, take a breath, and continue. Silence reads as
+    thinking; fillers read as unpreparedness.
+
+*   Your teammates should nod in agreement during your intro --
+    it signals to the professor that this is a group effort and
+    builds cohesion.
+
+
+================================================================================
+ ONE-LINE OPENER FALLBACK  (if you completely blank)
+================================================================================
+
+"Jet engines fail. When they do, lives and millions of dollars are
+at stake. Our project predicts that failure, before it happens,
+using physics-informed deep learning."
+
+From there, continue into Version B.
+
+
+================================================================================
+ WHAT TO SAY *IMMEDIATELY* AFTER THE OPENING
+================================================================================
+
+Bridge into slide 2 (The Dataset) with:
+
+    "Let us begin with the dataset. NASA's C-MAPSS --
+     the Commercial Modular Aero-Propulsion System Simulation --
+     gives us one hundred training engines and one hundred test
+     engines, each instrumented with twenty-one sensors, each run
+     to failure. We focus on the FD001 fault mode, the single-
+     operating-condition baseline."
+
+That takes you cleanly into the first real content slide.
+
+
+================================================================================
+ END OF FILE
+================================================================================
