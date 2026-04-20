@@ -1,0 +1,305 @@
+================================================================================
+ MODEL ARCHITECTURE & TRAINING  --  explained in plain English
+ Final Project, RCSSTEAP, Beihang University
+ Kodie Amo Kwame (LS2525226) | Sumara Alfred Salifu (LS2525245)
+                              | Peta Mimi Precious (LS2525255)
+================================================================================
+
+This document answers two questions a professor is likely to ask:
+
+    Q1.  Which architecture did you use?
+    Q2.  How was the model trained?
+
+Use it as your cheat sheet during the defense.
+
+
+================================================================================
+ Q1.  WHICH ARCHITECTURE DID YOU USE?
+================================================================================
+
+ANSWER IN ONE SENTENCE
+----------------------
+"We used TWO architectures deliberately, so that we could isolate the
+contribution of physics from the contribution of model capacity."
+
+MODEL 1 -- 1D CONVOLUTIONAL NEURAL NETWORK (CNN, BASELINE)
+----------------------------------------------------------
+Layer-by-layer:
+
+    Input  :  shape (30, 18)
+              = 30 consecutive operating cycles
+              x 18 sensor channels (21 sensors minus 6 constants minus
+                                    3 operating settings that we kept)
+
+    Conv1D(16 filters, kernel size 5)
+           :  16 small learnable pattern-detectors, each 5 cycles wide,
+              sliding across the 30-cycle window.
+              Output shape: (26, 16)    -- 30 - 5 + 1 = 26 time steps,
+                                           one value per filter per step.
+
+    ReLU   :  "Rectified Linear Unit" = max(0, x).
+              Keeps positive activations, zeros out negatives.
+              Non-linear so the network can learn curved decision
+              boundaries.
+
+    GlobalAveragePooling (GAP)
+           :  Averages each filter's 26 values down to ONE number.
+              Output shape: (16,)
+              GAP is preferred over Flatten here because it throws away
+              absolute time position and only keeps filter "strength",
+              which reduces parameters and is less prone to overfitting.
+
+    Dense(32) + ReLU
+           :  A fully-connected (FC) layer with 32 hidden neurons.
+              "Dense(32)" means 32 output neurons, each computing
+              output = ReLU(W.x + b) where x is the 16-vector from GAP.
+              Trainable parameters: 16*32 + 32 = 544.
+
+    Dense(1)
+           :  Final layer with 1 output neuron = the predicted RUL.
+              No activation -- raw regression output.
+              Parameters: 32*1 + 1 = 33.
+
+Total trainable parameters, CNN: ~1,450.
+
+
+MODEL 2 -- PHYSICS-INFORMED NEURAL NETWORK (PINN)
+-------------------------------------------------
+The PINN is a pure Multi-Layer Perceptron (MLP). No convolution.
+
+    Input  :  shape (540,)
+              = the SAME 30x18 window, but flattened to a single vector
+              of 540 numbers.
+
+    Dense(96) + ReLU
+           :  First FC layer. 96 neurons.
+              "Dense(96)" means: for each of 96 output neurons, compute
+              a weighted sum of all 540 input features, add a bias, pass
+              through ReLU.
+              Parameters: 540*96 + 96 = 51,936.
+
+    Dense(48) + ReLU
+           :  Second FC layer. 48 neurons.
+              Takes the 96-vector from the previous layer, maps to 48.
+              Parameters: 96*48 + 48 = 4,656.
+
+    Dense(1)
+           :  Output layer. 1 RUL prediction.
+              Parameters: 48*1 + 1 = 49.
+
+Total trainable parameters, PINN: ~56,641.
+
+*** KEY TALKING POINT ***
+The PINN has FEWER convolutional priors than the CNN (it has no
+convolution at all) -- so any improvement it shows over the CNN
+cannot be attributed to a "better architecture". The improvement
+comes from the physics-informed LOSS FUNCTION, not the layers.
+
+
+MINI-GLOSSARY (say these out loud if asked)
+-------------------------------------------
+*   Dense(N)         = Fully connected layer with N output neurons.
+                       Each neuron = W.x + b, where W is a weight matrix
+                       and b is a bias vector, both learned by training.
+*   Conv1D(F, k)     = F learnable 1-D filters each of width k.
+                       Slides each filter over the time axis of the
+                       input and outputs a feature map per filter.
+*   ReLU             = f(x) = max(0, x). Non-linear activation.
+*   GlobalAvgPool    = average across the time axis -> collapses the
+                       (T, F) output of a Conv1D to just (F,).
+*   Parameters       = the numbers learned during training (weights W
+                       and biases b). More parameters = more capacity
+                       but also more risk of overfitting.
+*   MLP              = Multi-Layer Perceptron = stack of Dense layers
+                       with non-linearities in between.
+
+
+================================================================================
+ Q2.  HOW WAS THE MODEL TRAINED?
+================================================================================
+
+THE SHORT VERSION
+-----------------
+"Both models were trained on a sliding-window sequence regression task
+ using the Adam optimizer with batched stochastic gradient descent,
+ in pure NumPy, on CPU, in about 20.5 seconds total."
+
+THE FULL PROCEDURE, STEP BY STEP
+--------------------------------
+
+Step 1.  PREPARE THE DATA
+    1a. Load FD001 from the C-MAPSS dataset (100 training engines, 100
+        test engines, 21 sensors + 3 operating settings per cycle).
+    1b. Drop 6 sensors whose standard deviation was ~0 across the
+        training set (they carry no degradation information). Keep 18.
+    1c. Z-score normalize each sensor using the training set's mean and
+        std (apply the same scaler to validation and test).
+    1d. Build the target RUL. For each engine at cycle t:
+            true RUL = max_cycle_of_that_engine - t
+        Apply a PIECEWISE-LINEAR CAP at 125 cycles:
+            RUL = min(RUL, 125)
+        (Early-life cycles have almost no signal, so asking the
+         network to predict the exact number there would waste
+         capacity.)
+    1e. Slide a 30-cycle window over each engine with stride 1.
+        This produces:
+            - 14,207 training windows    (from ~80 engines)
+            - 3,524  validation windows  (from ~20 engines)
+        Each window has shape (30, 18) with a scalar RUL target.
+
+Step 2.  FORWARD PASS (what the network computes during one step)
+    CNN:   take the (30, 18) window, run it through
+           Conv1D -> ReLU -> GAP -> Dense(32) -> ReLU -> Dense(1),
+           output a single number = predicted RUL.
+    PINN:  flatten the (30, 18) window to a 540-vector, run it through
+           Dense(96) -> ReLU -> Dense(48) -> ReLU -> Dense(1),
+           output a single number = predicted RUL.
+
+Step 3.  LOSS
+    CNN:   plain mean squared error (MSE).
+               L = mean( (pred - true)^2 )
+
+    PINN:  MSE plus TWO physics terms.
+               L = L_MSE
+                   + 0.15 * L_monotonicity
+                   + 0.05 * L_drift
+
+           L_monotonicity:
+               Apply the PINN to two consecutive windows (t, t+1)
+               from the same engine. The prediction at t+1 must not
+               be larger than the prediction at t:
+                   L_mono = ReLU( pred(t+1) - pred(t) )^2
+               Rationale: a degraded engine cannot un-degrade.
+
+           L_drift:
+               The prediction should drop by exactly 1 cycle per
+               cycle of operation:
+                   L_drift = ( pred(t) - pred(t+1) - 1 )^2
+               Rationale: RUL is defined as "cycles left", so it
+               must tick down by 1 every cycle by construction.
+
+           The lambdas (0.15 and 0.05) were tuned by a small
+           validation sweep -- not arbitrary.
+
+Step 4.  BACKWARD PASS (compute gradients)
+    Standard chain rule backprop, implemented from scratch in NumPy.
+    Each layer's derivative is coded by hand:
+      - Dense: dL/dW = x.T @ dL/dy   ;   dL/dx = dL/dy @ W.T
+      - ReLU:  dL/dx = dL/dy * (x > 0)
+      - Conv1D and GAP: standard 1D convolution backward formulas.
+    For the PINN, gradients from MSE + monotonicity + drift are
+    summed before the optimizer step.
+
+Step 5.  OPTIMIZER STEP
+    Adam optimizer, learning rate = 1e-3, default betas (0.9, 0.999).
+    One update per mini-batch.
+
+        Adam is SGD with:
+          - per-parameter running averages of the gradient (momentum)
+          - per-parameter running averages of the gradient squared
+            (adaptive learning rate)
+          - a small epsilon for numerical stability.
+
+Step 6.  LOOP
+    For each epoch:
+        Shuffle the training indices.
+        For each mini-batch of 128 windows:
+            Forward -> Loss -> Backward -> Adam step.
+        After the epoch, compute validation RMSE on the held-out 3,524
+        windows. Record it for the training-curve plot.
+
+    CNN:   trained for 18 epochs.
+    PINN:  trained for 22 epochs.
+    Total wall-clock time: 20.5 seconds on CPU.
+
+
+HYPERPARAMETERS -- exact values used
+------------------------------------
+    Window length ................ 30 cycles
+    Stride ....................... 1
+    Feature channels ............. 18 (dropped 6 constant sensors)
+    RUL piecewise-linear cap ..... 125 cycles
+    Batch size ................... 128
+    Learning rate ................ 1e-3 (both models, Adam default)
+    Optimizer .................... Adam (coded from scratch in NumPy)
+    Weight initialization ........ He / Kaiming for ReLU layers
+    Loss (CNN)  .................. MSE
+    Loss (PINN) .................. MSE + 0.15*L_mono + 0.05*L_drift
+    Epochs, CNN  ................. 18
+    Epochs, PINN ................. 22
+    Framework .................... NONE -- pure NumPy, CPU only
+    Total training time .......... 20.5 seconds
+    Random seed .................. fixed, so results are reproducible
+
+
+WHY PURE NUMPY?
+---------------
+We implemented forward and backward passes by hand, without PyTorch or
+TensorFlow, for three reasons:
+
+    1. REPRODUCIBILITY.  Anyone with Python 3.10+ and NumPy can
+       re-run this -- no CUDA, no driver mismatches, no framework
+       version pinning.
+
+    2. TRANSPARENCY.  Every gradient is visible in the source code.
+       A reviewer can trace exactly how the physics loss propagates
+       backward through the network.
+
+    3. EFFICIENCY IS NOT THE BOTTLENECK.  With only ~60k parameters
+       and 14k training windows, a framework would not have been
+       faster in wall time -- it would just have added dependencies.
+
+
+================================================================================
+ FINAL RESULTS (for reference on the same page)
+================================================================================
+                               CNN          PINN         Improvement
+    RMSE (lower is better) .   18.68        14.64        -21.6 %
+    MAE  (lower is better) .   13.69        11.14        -18.6 %
+    NASA score (asym.)  ....  1107.5       338.6         -69.4 %
+
+The NASA scoring function punishes LATE predictions roughly 4x harder
+than early predictions. That is where the PINN's monotonicity
+constraint does its biggest work -- by construction, the PINN rarely
+overshoots at low RUL, which is exactly where the score is most
+sensitive.
+
+
+================================================================================
+ EXAMINER-STYLE Q&A CHEAT SHEET
+================================================================================
+
+Q:  Why not just use a larger CNN?
+A:  Size does not fix the structural problem. A larger CNN can still
+    predict rising RUL, which is physically impossible. The physics
+    loss eliminates that failure mode by design.
+
+Q:  How did you choose lambda = 0.15 and 0.05?
+A:  Small validation sweep. We weighted monotonicity higher because
+    getting the SIGN of dRUL/dt right is more important than the exact
+    magnitude -- the drift term then fine-tunes the magnitude.
+
+Q:  Would this generalize to FD002, FD003, FD004?
+A:  The physics constraints are dataset-independent -- they only
+    encode the definition of RUL. We expect absolute RMSE to rise
+    with multi-mode faults, but the PINN-vs-CNN relative improvement
+    should persist.
+
+Q:  Why did you apply the RUL cap at 125 cycles?
+A:  Because early-life cycles show effectively no degradation signal.
+    Asking the network to predict the exact RUL there forces it to
+    fit a flat line, which wastes capacity. The 125 cap is standard
+    in the C-MAPSS prognostics literature.
+
+Q:  Why Adam over plain SGD?
+A:  Adam's per-parameter adaptive learning rate is helpful when
+    gradient magnitudes differ across the Conv1D kernel weights and
+    the dense layer weights. SGD + momentum would also work but
+    would need a hand-tuned learning-rate schedule.
+
+Q:  The CNN has fewer parameters than the PINN -- is the comparison fair?
+A:  Yes, and that is the point. The PINN has MORE raw parameters but
+    still beats the CNN -- the win is not coming from extra capacity,
+    it is coming from a SMARTER LOSS. A larger CNN without the
+    physics loss would still have the same structural flaw (it could
+    still predict rising RUL).
