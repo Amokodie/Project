@@ -19,5 +19,3 @@ Thumbs.db
 # deck2video — cloned upstream tool, not our source
 deck2video/
 
-# Generated narrated video (large binary, rebuildable)
-output/engine_rul_video.mp4

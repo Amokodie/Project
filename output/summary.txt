@@ -1,0 +1,31 @@
+NASA C-MAPSS FD001  -  CNN vs PINN (pure-numpy)
+==================================================================
+Window length            : 30 cycles
+RUL piecewise-linear cap : 125
+Feature channels         : 18  (dropped 6 constant sensors)
+Train windows / val      : 14207 / 3524
+Test engines             : 100
+
+Model 1 - 1D-CNN (baseline, no physics)
+---------------------------------------
+  architecture : Conv1D(F=16,k=5) -> ReLU -> GlobalAvgPool -> Dense(32) -> ReLU -> Dense(1)
+  epochs       : 18
+  test RMSE    : 18.679
+  test MAE     : 13.689
+  NASA score   : 1107.5
+
+Model 2 - PINN (physics-informed MLP)
+-------------------------------------
+  architecture : Dense(96) -> ReLU -> Dense(48) -> ReLU -> Dense(1)
+  epochs       : 22
+  physics loss : lam_mono=0.15, lam_drift=0.05  on adjacent-cycle pairs
+                  monotonicity :  ReLU(RUL(t+1) - RUL(t))^2
+                  drift        :  (RUL(t) - RUL(t+1) - 1)^2
+  test RMSE    : 14.644
+  test MAE     : 11.137
+  NASA score   : 338.6
+
+Relative change vs plain CNN:
+  PINN     : RMSE -21.6%  MAE -18.6%  SCORE -69.4%
+
+Total wall time: 20.5s
