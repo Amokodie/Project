@@ -321,7 +321,12 @@ class PresentationPDF(FPDF):
             kwargs["text"] = ascii_safe(kwargs["text"])
         elif "txt" in kwargs and isinstance(kwargs["txt"], str):
             kwargs["txt"] = ascii_safe(kwargs["txt"])
-        return super().multi_cell(*args, **kwargs)
+        result = super().multi_cell(*args, **kwargs)
+        # fpdf2's multi_cell does not reliably reset x to the left margin
+        # afterwards (varies by version / new_x default). Force it so the
+        # next text block always starts flush-left.
+        self.set_x(self.l_margin)
+        return result
 
 
 def image_height_mm(path: Path, target_w_mm: float) -> float:
