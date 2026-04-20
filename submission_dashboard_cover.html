@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Group submission — NASA C-MAPSS PHM Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c1118;
+      --sidebar: #0f1419;
+      --fg: #e5e7eb;
+      --muted: #94a3b8;
+      --h1: #f0f9ff;
+      --accent: #38bdf8;
+      --border: rgba(56, 189, 248, 0.12);
+      --metric-bg: rgba(15, 23, 42, 0.55);
+      --input-bg: rgba(15, 23, 42, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: #1e293b;
+      color: var(--fg);
+      min-height: 100vh;
+      padding: 12px;
+    }
+    .sheet {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .ribbon {
+      height: 4px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        #0ea5e9 25%,
+        #38bdf8 50%,
+        #22d3ee 75%,
+        transparent 100%
+      );
+      opacity: 0.85;
+    }
+    .top {
+      padding: 18px 22px 8px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--h1);
+    }
+    .subtitle {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .mock {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 280px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      padding: 14px 12px;
+      font-size: 0.72rem;
+    }
+    .sidebar h3 {
+      margin: 0 0 10px;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      margin-bottom: 6px;
+      color: var(--fg);
+      font-size: 0.7rem;
+    }
+    .sidebar .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+    .main {
+      padding: 14px 18px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    .main h2 {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      color: #bae6fd;
+      font-weight: 600;
+    }
+    .pillars {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--fg);
+    }
+    .pillars li { margin-bottom: 4px; }
+    .tabs-mock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .tab {
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid var(--border);
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+    .tab.active {
+      color: #f0f9ff;
+      border-color: rgba(56, 189, 248, 0.35);
+      font-weight: 600;
+    }
+    .submit {
+      padding: 16px 22px 20px;
+      border-top: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.35);
+    }
+    .submit h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      color: #bae6fd;
+    }
+    table.members {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+    table.members th,
+    table.members td {
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+    }
+    table.members th {
+      background: var(--metric-bg);
+      color: #bae6fd;
+      font-weight: 600;
+    }
+    .link-box {
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--metric-bg);
+      border: 1px solid var(--border);
+    }
+    .link-box label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .link-box a {
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .hint {
+      margin: 10px 0 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .sheet {
+        max-width: none;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    BEFORE SUBMITTING:
+    1. Deploy your app on Streamlit Community Cloud and copy the public URL.
+    2. Replace BOTH href= and the visible URL text below (search for REPLACE_STREAMLIT_URL).
+  -->
+  <div class="sheet">
+    <div class="ribbon"></div>
+    <div class="top">
+      <h1>NASA C-MAPSS Turbofan Engine — PHM Dashboard</h1>
+      <p class="subtitle">Assignment 2 · Interactive fleet health &amp; RUL briefing (Streamlit)</p>
+    </div>
+
+    <div class="mock">
+      <aside class="sidebar" aria-hidden="true">
+        <h3>Appearance</h3>
+        <span class="pill">Dark</span> <span class="pill">Light</span>
+        <div class="divider"></div>
+        <h3>Data source</h3>
+        <div class="pill">Path to CMAPSSData</div>
+        <div class="pill">Dataset FD001–FD004</div>
+        <div class="pill">Fleet: test / train</div>
+      </aside>
+      <div class="main">
+        <h2>Home — three engineering pillars</h2>
+        <ol class="pillars">
+          <li><strong>Physical system insight</strong> — turbofan context, 26 channels per cycle, degradation in time series.</li>
+          <li><strong>Model trade-offs</strong> — CNN / Transformer vs physics-informed (PINN) and hybrid stacks.</li>
+          <li><strong>Compute &amp; data reality</strong> — quality, drift, deployment cost (GEMM, KV cache, quantization).</li>
+        </ol>
+        <div class="tabs-mock">
+          <span class="tab active">Fleet overview</span>
+          <span class="tab">Exploratory analysis</span>
+          <span class="tab">Data audit report</span>
+          <span class="tab">Architecture selection</span>
+          <span class="tab">Deep learning lab</span>
+          <span class="tab">Compute &amp; deployment</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="submit">
+      <h2>Group members &amp; live application (for lecturer)</h2>
+      <table class="members">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Student ID (index)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Kodie Amo Kwame</td>
+            <td>LS2525226</td>
+          </tr>
+          <tr>
+            <td>Sumara Alfred Salifu</td>
+            <td>LS2525245</td>
+          </tr>
+          <tr>
+            <td>Peta Mimi Precious</td>
+            <td>LS2525255</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="link-box">
+        <label for="app-link">Public Streamlit app URL (must open in a normal browser for marking)</label>
+        <a
+          id="app-link"
+          href="REPLACE_STREAMLIT_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+        >REPLACE_STREAMLIT_URL</a>
+      </div>
+      <p class="hint">
+        Institutions: <strong>Beihang University</strong> (北京航空航天大学) ·
+        <strong>RCSSTEAP</strong> (Regional Centre for Space Science and Technology Education in Asia and the Pacific), China.
+      </p>
+      <p class="hint">
+        To save as one-page PDF: open this file in Chrome or Edge → Print → Destination “Save as PDF” → Landscape (optional).
+      </p>
+    </section>
+  </div>
+</body>
+</html>

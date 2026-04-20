@@ -1,8 +1,10 @@
 """
-Assignment 2 — NASA C-MAPSS Turbofan PHM Streamlit Dashboard.
+Final Project — NASA C-MAPSS Turbofan PHM Streamlit Dashboard.
 
 Run: streamlit run app.py
 Set folder to your CMAPSSData directory (train/test/RUL files) or env CMAPSS_DATA_DIR.
+Users can also upload their own C-MAPSS files in the "Train on your data" tab and run
+the CNN + PINN analysis live in the browser.
 """
 
 from __future__ import annotations
@@ -21,6 +23,9 @@ import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
 from plotly.subplots import make_subplots
+
+import re
+import tempfile
 
 from analysis_pdf import build_cmapss_brief_pdf
 from plotly_theme import apply_plotly_theme
@@ -122,7 +127,7 @@ def _mermaid_components_html(diagram: str, *, theme: str = "dark", height: int =
 
 
 st.set_page_config(
-    page_title="C-MAPSS PHM Dashboard",
+    page_title="Final Project — C-MAPSS PHM Dashboard",
     page_icon="🛫",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -207,7 +212,7 @@ def render_authors_banner():
 
 
 def pillar_intro():
-    st.title("NASA C-MAPSS Turbofan Engine — PHM Dashboard")
+    st.title("Final Project — NASA C-MAPSS Turbofan Engine PHM Dashboard")
     hero_engineering_ribbon(st.session_state.get("ui_theme", "dark"))
     render_authors_banner()
     st.markdown(
@@ -744,6 +749,241 @@ def tab_compute():
     )
 
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+REFERENCE_PDF = os.path.join(_HERE, "Physics_Informed_AI.pdf")
+REFERENCE_VIDEO = os.path.join(_HERE, "Predicting_Failure.mp4")
+
+
+def tab_references():
+    st.subheader("Reference materials")
+    st.markdown(
+        "Background reading and a short explainer video for the PINN / RUL story used in this dashboard. "
+        "Both files live next to `app.py` — replace them with newer copies and the tab updates automatically."
+    )
+
+    st.markdown("#### Physics-Informed AI (PDF)")
+    if os.path.isfile(REFERENCE_PDF):
+        size_mb = os.path.getsize(REFERENCE_PDF) / (1024 * 1024)
+        with open(REFERENCE_PDF, "rb") as fh:
+            pdf_bytes = fh.read()
+        c1, c2 = st.columns([1, 3])
+        c1.download_button(
+            "Download PDF",
+            data=pdf_bytes,
+            file_name=os.path.basename(REFERENCE_PDF),
+            mime="application/pdf",
+            use_container_width=True,
+        )
+        c2.caption(f"`{os.path.basename(REFERENCE_PDF)}` ({size_mb:.1f} MB)")
+        with st.expander("Show inline preview (loads the PDF into the browser)", expanded=False):
+            b64 = base64.b64encode(pdf_bytes).decode("ascii")
+            iframe = (
+                f'<iframe src="data:application/pdf;base64,{b64}" '
+                'width="100%" height="800" style="border:1px solid #334155; border-radius:8px;" '
+                'type="application/pdf"></iframe>'
+            )
+            st.markdown(iframe, unsafe_allow_html=True)
+            st.caption(
+                "If the embedded viewer is blank, your browser blocked the data URL — "
+                "use the Download button above and open it locally."
+            )
+    else:
+        st.warning(f"PDF not found at `{REFERENCE_PDF}`. Drop the file there and reload.")
+
+    st.markdown("#### Predicting Failure (video)")
+    if os.path.isfile(REFERENCE_VIDEO):
+        size_mb = os.path.getsize(REFERENCE_VIDEO) / (1024 * 1024)
+        st.video(REFERENCE_VIDEO)
+        with open(REFERENCE_VIDEO, "rb") as fh:
+            video_bytes = fh.read()
+        c1, c2 = st.columns([1, 3])
+        c1.download_button(
+            "Download video",
+            data=video_bytes,
+            file_name=os.path.basename(REFERENCE_VIDEO),
+            mime="video/mp4",
+            use_container_width=True,
+        )
+        c2.caption(f"`{os.path.basename(REFERENCE_VIDEO)}` ({size_mb:.1f} MB)")
+    else:
+        st.warning(f"Video not found at `{REFERENCE_VIDEO}`. Drop the file there and reload.")
+
+
+_CMAPSS_NAME_RE = re.compile(r"^(train|test|RUL)_FD00([1-4])\.txt$", re.IGNORECASE)
+
+
+def _stage_uploads_to_dir(uploaded_files) -> tuple[str, dict[str, set[str]]]:
+    """Save uploaded C-MAPSS files into a fresh temp folder.
+
+    Returns (folder_path, found) where found maps FD id -> set of split names
+    seen ({'train','test','RUL'}). Files with non-matching names are ignored.
+    """
+    tmp = tempfile.mkdtemp(prefix="cmapss_upload_")
+    found: dict[str, set[str]] = {}
+    for uf in uploaded_files or []:
+        m = _CMAPSS_NAME_RE.match(os.path.basename(uf.name))
+        if not m:
+            continue
+        split = m.group(1).lower()
+        if split == "rul":
+            split_norm = "RUL"
+        else:
+            split_norm = split  # train | test
+        fd_id = f"FD00{m.group(2)}"
+        # Normalise filename to lowercase split for train/test, uppercase RUL
+        canonical = f"{split_norm}_{fd_id}.txt"
+        out_path = os.path.join(tmp, canonical)
+        with open(out_path, "wb") as fh:
+            fh.write(uf.getbuffer())
+        found.setdefault(fd_id, set()).add(split_norm)
+    return tmp, found
+
+
+def _complete_fds(found: dict[str, set[str]]) -> list[str]:
+    needed = {"train", "test", "RUL"}
+    return sorted(fd for fd, splits in found.items() if needed.issubset(splits))
+
+
+def tab_run_on_your_data():
+    st.subheader("Train on your data — upload C-MAPSS files, get the full analysis")
+    st.markdown(
+        """
+Drop the C-MAPSS `.txt` files for any FD subset (or several at once). For each FD subset
+you must upload **all three** files: `train_FD00x.txt`, `test_FD00x.txt`, `RUL_FD00x.txt`.
+Click **Run analysis**, the CNN + PINN train end-to-end (~20 s on CPU per subset), and the
+charts + presentation-ready writeup render below.
+        """
+    )
+
+    files = st.file_uploader(
+        "Drop train_FD00x.txt, test_FD00x.txt, RUL_FD00x.txt",
+        type=["txt"],
+        accept_multiple_files=True,
+        help="Same 26-column whitespace format as the official NASA release.",
+        key="cmapss_uploader",
+    )
+
+    if not files:
+        st.info("Waiting for uploads. The 3-file trio for FD001 alone is enough to start.")
+        return
+
+    tmp_dir, found = _stage_uploads_to_dir(files)
+    complete = _complete_fds(found)
+
+    cols = st.columns(4)
+    for i, fd in enumerate(("FD001", "FD002", "FD003", "FD004")):
+        splits = found.get(fd, set())
+        status = "ready" if {"train", "test", "RUL"}.issubset(splits) else (
+            f"missing: {', '.join(sorted({'train', 'test', 'RUL'} - splits))}" if splits else "—"
+        )
+        cols[i].metric(fd, f"{len(splits)}/3 files", status)
+
+    if not complete:
+        st.warning("No FD subset has all three files uploaded yet.")
+        return
+
+    fd_choice = st.selectbox("Subset to train on", complete, index=0)
+    if not st.button("Run analysis", type="primary", use_container_width=True):
+        return
+
+    out_dir = tempfile.mkdtemp(prefix="cmapss_run_")
+    progress = st.status(f"Training CNN + PINN on {fd_choice}…", expanded=True)
+    with progress:
+        st.write(f"Output folder: `{out_dir}`")
+        st.write("Loading data, fitting z-score, building windows…")
+        try:
+            from train_models import run_pipeline  # local import to avoid heavy deps at app start
+            ctx = run_pipeline(data_dir=tmp_dir, out_dir=out_dir, fd=fd_choice)
+            progress.update(label=f"Done in {ctx['wall_seconds']:.1f}s", state="complete")
+        except Exception as exc:
+            progress.update(label="Training failed", state="error")
+            st.exception(exc)
+            return
+
+    m_cnn = ctx["metrics"]["cnn"]
+    m_pinn = ctx["metrics"]["pinn"]
+    drmse = 100 * (m_pinn["rmse"] / m_cnn["rmse"] - 1)
+    dmae = 100 * (m_pinn["mae"] / m_cnn["mae"] - 1)
+    dscore = 100 * (m_pinn["score"] / m_cnn["score"] - 1)
+
+    st.success(
+        f"{fd_choice} • PINN beats CNN by {-drmse:.1f}% RMSE, {-dmae:.1f}% MAE, "
+        f"{-dscore:.1f}% NASA score (lower is better)."
+    )
+
+    h1, h2, h3 = st.columns(3)
+    h1.metric("RMSE (cycles)", f"{m_pinn['rmse']:.2f}", f"{drmse:+.1f}% vs CNN ({m_cnn['rmse']:.2f})")
+    h2.metric("MAE (cycles)", f"{m_pinn['mae']:.2f}", f"{dmae:+.1f}% vs CNN ({m_cnn['mae']:.2f})")
+    h3.metric("NASA score", f"{m_pinn['score']:.1f}", f"{dscore:+.1f}% vs CNN ({m_cnn['score']:.1f})")
+
+    st.markdown("#### Headline figure")
+    cmp_path = os.path.join(out_dir, "model_comparison.png")
+    if os.path.isfile(cmp_path):
+        st.image(cmp_path, use_container_width=True)
+
+    st.markdown("#### Training dynamics")
+    tc = os.path.join(out_dir, "training_curves.png")
+    if os.path.isfile(tc):
+        st.image(tc, use_container_width=True)
+
+    st.markdown("#### Predicted vs actual (test set)")
+    p1, p2 = st.columns(2)
+    with p1:
+        st.image(os.path.join(out_dir, "pred_vs_actual_cnn.png"), use_container_width=True)
+    with p2:
+        st.image(os.path.join(out_dir, "pred_vs_actual_pinn.png"), use_container_width=True)
+
+    st.markdown("#### Error distribution and per-engine view")
+    e1, e2 = st.columns(2)
+    with e1:
+        st.image(os.path.join(out_dir, "error_histogram.png"), use_container_width=True)
+    with e2:
+        st.image(os.path.join(out_dir, "per_engine_rul.png"), use_container_width=True)
+
+    st.markdown("#### Single-engine RUL trajectory")
+    st.image(os.path.join(out_dir, "rul_trajectory_example.png"), use_container_width=True)
+
+    with st.expander("Architecture diagram and learned CNN filters", expanded=False):
+        arch_path = os.path.join(out_dir, "network_architectures.png")
+        if not os.path.isfile(arch_path):
+            # diagram is generated by a separate script; fall back to repo-level file if present
+            repo_arch = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output", "network_architectures.png")
+            if os.path.isfile(repo_arch):
+                arch_path = repo_arch
+        if os.path.isfile(arch_path):
+            st.image(arch_path, use_container_width=True, caption="Two-model architecture (run make_architecture_diagram.py to refresh)")
+        st.image(os.path.join(out_dir, "cnn_filters.png"), use_container_width=True, caption="Learned 1D-CNN filters (rows = sensor channel, cols = kernel time offset)")
+        st.image(os.path.join(out_dir, "sensor_trajectories.png"), use_container_width=True, caption="Raw sensor traces — longest-running engine in this subset")
+
+    st.markdown("#### Presentation-ready analysis")
+    analysis_path = os.path.join(out_dir, "analysis.md")
+    if os.path.isfile(analysis_path):
+        with open(analysis_path, "r", encoding="utf-8") as fh:
+            md_text = fh.read()
+        st.markdown(md_text)
+        st.download_button(
+            "Download analysis.md",
+            data=md_text.encode("utf-8"),
+            file_name=f"analysis_{fd_choice}.md",
+            mime="text/markdown",
+            use_container_width=True,
+        )
+
+    st.markdown("#### Raw artefacts")
+    d1, d2, d3 = st.columns(3)
+    for col, name, label in [
+        (d1, "metrics.csv", "metrics.csv"),
+        (d2, "predictions_test.csv", "predictions_test.csv"),
+        (d3, "training_history.csv", "training_history.csv"),
+    ]:
+        p = os.path.join(out_dir, name)
+        if os.path.isfile(p):
+            with open(p, "rb") as fh:
+                col.download_button(label, data=fh.read(), file_name=name, mime="text/csv", use_container_width=True)
+
+    st.caption(f"Artefacts kept in `{out_dir}` for this session.")
+
+
 def main():
     if "ui_theme" not in st.session_state:
         st.session_state.ui_theme = "dark"
@@ -848,13 +1088,15 @@ def main():
     data_caption = " | ".join(cap_parts)
     tpl = plotly_template(st.session_state.get("ui_theme", "dark"))
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
         [
             "Fleet overview",
             "Exploratory analysis",
             "Data audit report",
             "Architecture selection",
             "Deep learning lab",
+            "Train on your data",
+            "References",
             "Compute & deployment",
         ]
     )
@@ -869,6 +1111,10 @@ def main():
     with tab5:
         tab_cnn_pinn_lab()
     with tab6:
+        tab_run_on_your_data()
+    with tab7:
+        tab_references()
+    with tab8:
         tab_compute()
 
 

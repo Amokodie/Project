@@ -111,7 +111,7 @@ def fig_loss_components_bar() -> go.Figure:
     """Three illustrative model families."""
     df = pd.DataFrame(
         {
-            "Model": ["1D-CNN", "Temporal Transformer", "PINN (hybrid)"],
+            "Model": ["1D-CNN", "Temporal Transformer", "PINN"],
             "Supervised": [76, 70, 42],
             "Attention / seq": [0, 22, 0],
             "Physics residual": [0, 0, 40],

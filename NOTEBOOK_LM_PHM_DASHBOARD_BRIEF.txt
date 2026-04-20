@@ -1,0 +1,179 @@
+================================================================================
+SOURCE DOCUMENT FOR NOTEBOOK LM — POWERPOINT / SLIDE DECK GENERATION
+================================================================================
+
+
+TITLE PAGE — SLIDE 1 (FIRST PAGE): LAYOUT INSTRUCTIONS FOR THE DECK
+--------------------------------------------------------------------
+Notebook LM / PowerPoint generator: Make the **first slide** a **title slide** with **all main text centered** (horizontally and vertically balanced).
+
+CENTER LINE 1 (main title, large font):
+  NASA C-MAPSS Turbofan Engine — PHM Dashboard
+
+CENTER LINE 2 (subtitle, medium font):
+  Interactive Streamlit Application
+
+CENTER LINE 3 (course / assignment context):
+  Assignment 2 — Prognostics & Health Management (PHM)
+
+CENTER BLOCK — STUDENT NAMES AND STUDENT IDs (one line per person; keep name + ID together):
+  Kodie Amo Kwame — LS2525226
+  Sumara Alfred Salifu — LS2525245
+  Peta Mimi Precious — LS2525255
+
+CENTER LINE (institution block — “center name” / affiliation):
+  Beihang University (北京航空航天大学 · Beijing University of Aeronautics and Astronautics)
+  Regional Centre for Space Science and Technology Education in Asia and the Pacific (RCSSTEAP), China
+
+Optional footer (small, still centered): Streamlit · Python · Plotly · NASA C-MAPSS benchmark data
+
+
+================================================================================
+METADATA (same project; for reference only)
+Project: NASA C-MAPSS Turbofan PHM Interactive Dashboard (Streamlit)
+Repository / course context: Assignment 2 — PHM course work
+================================================================================
+
+
+PURPOSE OF THIS DOCUMENT
+------------------------
+This text is intended to be uploaded to Notebook LM (or similar tools) to generate a professional PowerPoint-style presentation. It describes the problem domain, the software deliverable, its architecture, user-facing features, technical implementation, deployment, and team attribution. Ask the model to produce: (1) a slide outline with titles, (2) speaker notes per slide, and (3) optional diagram suggestions (Mermaid or simple boxes/arrows).
+
+
+EXECUTIVE SUMMARY (USE AS SLIDE 2 — AFTER TITLE PAGE)
+-----------------------------------------------------
+We built a browser-based dashboard for NASA’s Commercial Modular Aero-Propulsion System Simulation (C-MAPSS) turbofan engine degradation dataset. The application helps engineers and managers understand Remaining Useful Life (RUL) prediction in a fleet-health context: what is measured, how training vs test splits differ, which exploratory plots matter for feature selection, and how modern deep-learning choices (1D CNN, Transformer, PINN-style physics priors) compare for aerospace monitoring. The stack is Python, Streamlit, Plotly, and Pandas; the UI supports Dark/Light appearance, downloadable NASA readme text, and an auto-generated PDF analysis brief per selected dataset.
+
+
+PROBLEM DOMAIN: WHY TURBofan PHM MATTERS
+----------------------------------------
+- Modern aircraft engines are safety-critical. Operators need estimates of how many flight cycles remain before maintenance or failure risk becomes unacceptable.
+- Prognostics and Health Management (PHM) uses sensor time series (temperatures, pressures, speeds, flows) to infer degradation state and predict RUL.
+- NASA C-MAPSS provides a standard benchmark: simulated multi-engine fleets with controlled fault modes and operating conditions, enabling reproducible research without exposing proprietary airline data.
+
+
+DATASET: NASA C-MAPSS (FD001–FD004)
+-----------------------------------
+- Each record is one “snapshot” per engine per flight cycle: unit ID, cycle index, three operational settings, and twenty-one sensor channels (26 numeric fields total in the standard layout).
+- Training runs are “run-to-failure” in simulation; test runs are censored (the engine stops before failure in the log), and a separate RUL_FD00x.txt file gives the true remaining cycles for each test engine at the end of its series.
+- Four scenarios (metadata summarized in-app from NASA readme):
+  FD001: single operating condition (sea level); fault focused on high-pressure compressor (HPC) degradation; 100 train / 100 test engines (typical counts from readme).
+  FD002: six mixed flight regimes; HPC-only fault; larger fleet counts (on the order of hundreds of engines per split).
+  FD003: sea level; combined HPC and fan degradation; 100/100 style counts.
+  FD004: mixed regimes; HPC + fan; larger fleet counts.
+- Constant (near-zero variance) sensors are common in some splits; the dashboard detects and lists them because they are often dropped in published papers.
+
+
+THREE ENGINEERING PILLARS (FRAMING FOR MANAGEMENT)
+--------------------------------------------------
+The app narrative is organized around three pillars for briefing decision-makers:
+
+1) Physical system insight  
+   What the turbofan subsystem context is (e.g., HPC, combustor, turbine proxies), what 26 channels represent, and how degradation may appear as trends in temperature-like vs pressure-margin-like traces over cycles.
+
+2) Model trade-offs  
+   When purely data-driven sequence models (1D CNN sliding windows, Transformer attention over time) are appropriate versus when embedding structure via physics-informed neural networks (PINNs) or hybrid stacks (e.g., GNN + Transformer + PINN) is justified—especially under data scarcity or assurance needs in aerospace.
+
+3) Compute and data reality  
+   Data quality concerns: missing-not-at-random (MNAR) sensor dropouts during transients, calibration drift vs real degradation, class imbalance (many nominal cycles vs rare fault regimes), and deployment cost drivers (GEMM-heavy layers, attention KV cache memory, quantization for edge inference).
+
+
+SOFTWARE DELIVERABLE: STREAMLIT WEB APPLICATION
+-----------------------------------------------
+- Name: C-MAPSS PHM Dashboard (page title: “NASA C-MAPSS Turbofan Engine — PHM Dashboard”).
+- Entry point: streamlit run app.py
+- Data path: user selects a folder containing NASA CMAPSSData-style files (train_FD00x.txt, test_FD00x.txt, RUL_FD00x.txt). Environment variable CMAPSS_DATA_DIR can override defaults. For cloud deployment, committed files under repo data/ are used.
+- Appearance: sidebar radio “Dark” / “Light”; unified CSS theme so Plotly charts and Streamlit widgets stay readable (translucent “ash” paper/plot backgrounds in light mode, soft slate/navy in dark mode via a centralized plotly_theme helper).
+
+
+MAIN TAB STRUCTURE (SIX TABS)
+----------------------------
+
+Tab 1 — Fleet overview  
+- Interactive multi-engine time-series view: two stacked subplots for user-selected primary and secondary sensor channels vs cycle.  
+- Multiselect engine units; default picks a small subset for speed.  
+- Short explanatory text ties sensor choices to literature-style proxies (e.g., LPT outlet, Ps30 pressure).  
+- Plotly theme applied for consistent axes and backgrounds.
+
+Tab 2 — Exploratory analysis (EDA)  
+- Checkbox to include training split in EDA tables/plots when both train and test exist.  
+- Metrics: row count, engine count, varying vs constant sensors, train rows, RUL label count.  
+- Expandable list of constant sensors.  
+- Plots (all driven from real loaded columns): Pearson correlation heatmap among varying sensors (row-sampled for large tables); bar chart of absolute correlation with cycle index (trend strength); last-cycle per engine and run-length histograms; 2D settings scatter and 3D settings cloud; per-sensor standard deviation; optional train vs test last-cycle histogram overlay on one sensor; RUL overview if labels exist; fleet-mean normalized-life trajectories for up to four sensors; PCA on last-cycle standardized vectors; optional pair-sensor scatter at last snapshot.  
+- Purpose: support feature discovery, regime understanding, and discussion of label alignment with sensor behavior.
+
+Tab 3 — Data audit report  
+- Qualitative “Session 4 style” engineering dimensions: Completeness, Consistency, Accuracy, Timeliness, Relevance—with illustrative radar chart and a companion table (scores and discussion hooks).  
+- Text explains MNAR risk, calibration drift, and rare-fault imbalance.  
+- Intended as a structured audit narrative before trusting ML.
+
+Tab 4 — Architecture selection  
+- Prose comparing Transformers/CNNs vs PINNs vs hybrid digital-twin stacks.  
+- Qualitative decision matrix (Approach vs Data need, Interpretability, Regulatory story, Fit for C-MAPSS).  
+- Mermaid flowchart: fleet time series → data budget → sequence model vs PINN path → hybrid monitoring.  
+- Second Mermaid diagram: why PINN can be “safer” than a pure black box for aerospace (staged assurance narrative).
+
+Tab 5 — Deep learning lab (illustrative, not trained on user data)  
+- Synthetic loss curves for CNN vs Transformer vs PINN-style model families.  
+- Radar comparison of qualitative strengths across regimes, attention, data efficiency, interpretability, edge deploy, physics consistency.  
+- Stacked bar of illustrative loss-term emphasis.  
+- Three-panel intuition figure: CNN local window, Transformer attention mass, PINN wear channel.  
+- Mermaid architecture flow: 1D CNN path, Transformer path, PINN path converging to C-MAPSS FD001–FD004 context.  
+- Optional expandable implementation checklist.
+
+Tab 6 — Compute & deployment  
+- Qualitative discussion of GEMM dominance, KV cache scaling with history length, INT8/INT4 quantization.  
+- Simple interactive “FLOP sanity check”: parameters × tokens heuristic.  
+- Cost calculator: fleet size, inferences per aircraft per day, API $/1000 inferences vs self-hosted fixed + marginal cost—framed as a communication aid, not a full TCO model.
+
+
+DOCUMENTATION & DOWNLOADS
+-------------------------
+- Download NASA readme.txt from user’s CMAPSS folder when present; otherwise bundled readme copy from assets.  
+- Download auto-generated PDF brief (fpdf2): dataset-specific CMAPSS PHM brief citing Saxena et al. PHM08.  
+- Optional download slot for PHM08 conference paper PDF if placed in assets.  
+- Sidebar: install/run instructions, pip install -r requirements.txt.
+
+
+TECHNICAL IMPLEMENTATION (FOR AN APPENDIX OR TECH SLIDE)
+--------------------------------------------------------
+- Languages/libraries: Python 3; Streamlit for UI; Pandas/NumPy for data; Plotly for interactive charts; fpdf2 for PDF; Pillow for logo rendering; Mermaid 10 via components.html iframe for diagrams.  
+- Modules: app.py (orchestration, tabs); cmapss_data.py (paths, loading, scenario metadata); eda_charts.py (figure builders); cnn_pinn_lab.py (illustrative DL figures); analysis_pdf.py (PDF generation); plotly_theme.py (apply_plotly_theme for light/dark surfaces); ui_theme.py (CSS tokens and plotly_template mapping).  
+- Theming: _plotly(fig, tpl) in app.py wraps figures with apply_plotly_theme so chart helpers stay simple and deployment cannot mismatch function signatures.  
+- Caching: @st.cache_data on bundle load for train/test/RUL.  
+- Deployment: Streamlit Community Cloud; data must be committed under data/ for cloud; GitHub file size limits apply.
+
+
+TEAM AND INSTITUTIONS (ATTRIBUTION SLIDE)
+-----------------------------------------
+- Beihang University (北京航空航天大学 / Beijing University of Aeronautics and Astronautics).  
+- Regional Centre for Space Science and Technology Education in Asia and the Pacific (RCSSTEAP), China.  
+- Contributors (example IDs from app): Kodie Amo Kwame (LS2525226); Sumara Alfred Salifu (LS2525245); Peta Mimi Precious (LS2525255).  
+- Sidebar expander “Authors & institution” for logos and markdown table.
+
+
+SUGGESTED PRESENTATION FLOW (FOR NOTEBOOK LM TO EXPAND)
+-------------------------------------------------------
+1. Title page (Slide 1): centered project title, subtitle, course line, **three student names with IDs**, centered institution names (Beihang + RCSSTEAP) — see “TITLE PAGE” section at top of this file.  
+2. Executive summary (Slide 2): one-paragraph overview of the dashboard and stack (see “EXECUTIVE SUMMARY” section).  
+3. Motivation: safety-critical engines, need for RUL and monitoring.  
+4. Dataset: C-MAPSS structure, FD001–FD004 scenarios, train vs test vs RUL.  
+5. Three pillars: physics insight, model trade-offs, compute/data reality.  
+6. Live demo storyboard: sidebar data path → fleet trajectories → EDA highlights.  
+7. Data quality & audit narrative (audit tab).  
+8. Architecture choices: CNN / Transformer / PINN / hybrid.  
+9. Illustrative DL lab (not trained models).  
+10. Deployment & cost awareness.  
+11. Deliverables: PDF brief, readme, public app link.  
+12. Team & institutions (may repeat title-page names/IDs briefly or refer to Slide 1).  
+13. References: NASA C-MAPSS readme; Saxena et al. PHM08 damage propagation modeling.  
+
+CLOSING NOTE FOR SLIDE GENERATION
+---------------------------------
+- Emphasize that illustrative curves in the Deep learning lab are synthetic and for discussion only.  
+- Emphasize that correlation and PCA are exploratory—not causal proof of physics.  
+- Suitable audience: engineering managers, course instructors, and stakeholders evaluating PHM literacy and tooling.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

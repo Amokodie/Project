@@ -7,12 +7,14 @@ size: "16:9"
 paginate: true
 backgroundColor: "#0e1117"
 color: "#e8e8e8"
-style: "section { background: linear-gradient(135deg, #0b1220 0%, #142034 55%, #1c2f52 100%); font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif; padding: 48px 72px; color: #eaeef5; } section.lead { text-align: center; background: radial-gradient(circle at 50% 30%, #1f3a68 0%, #0b1220 70%); } h1 { color: #ffffff; font-size: 62px; font-weight: 800; letter-spacing: -1.2px; margin: 0 0 10px 0; line-height: 1.05; } h2 { color: #ffb347; font-size: 36px; font-weight: 700; border-left: 6px solid #ffb347; padding-left: 18px; margin: 0 0 18px 0; } h3 { color: #7dd3fc; font-size: 26px; font-weight: 600; margin: 8px 0; } p, li { font-size: 24px; line-height: 1.45; } strong { color: #ffd166; } em { color: #a5b4fc; } table { font-size: 24px; border-collapse: collapse; width: 100%; } th { color: #7dd3fc; font-weight: 700; border-bottom: 2px solid #334155; padding: 10px 14px; text-align: left; } td { padding: 8px 14px; border-bottom: 1px solid #1f2937; } code { background: #0f172a; color: #fcd34d; padding: 2px 10px; border-radius: 6px; font-size: 22px; } blockquote { border-left: 4px solid #7dd3fc; padding: 4px 16px; color: #cbd5e1; font-style: italic; background: rgba(125,211,252,0.05); } img { border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); } section::after { color: #64748b; font-size: 16px; } footer { color: #64748b; font-size: 14px; }"
+style: "@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap'); section { background: radial-gradient(ellipse at 30% 15%, #1f3a68 0%, #0b1220 55%, #142034 100%); font-family: 'IBM Plex Sans', 'Segoe UI', 'Helvetica Neue', sans-serif; padding: 52px 72px 60px; color: #e6eaf2; position: relative; } section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, transparent 0%, #0ea5e9 25%, #38bdf8 50%, #22d3ee 75%, transparent 100%); } section.lead { text-align: center; background: radial-gradient(circle at 50% 30%, #1f3a68 0%, #0b1220 70%); } .eyebrow { display: inline-block; font-size: 18px; letter-spacing: 3.2px; text-transform: uppercase; color: #7dd3fc; font-weight: 600; margin-bottom: 20px; } h1 { color: #ffffff; font-size: 58px; font-weight: 800; letter-spacing: -1.4px; margin: 0 0 12px 0; line-height: 1.05; } h2 { color: #ffb347; font-size: 34px; font-weight: 700; border-left: 6px solid #ffb347; padding-left: 18px; margin: 0 0 18px 0; letter-spacing: -0.3px; } h3 { color: #7dd3fc; font-size: 24px; font-weight: 600; margin: 8px 0 4px 0; letter-spacing: 0.2px; } p, li { font-size: 23px; line-height: 1.5; color: #e6eaf2; } strong { color: #ffd166; font-weight: 600; } em { color: #a5b4fc; font-style: italic; } table { font-size: 22px; border-collapse: collapse; width: 100%; margin-top: 8px; } th { color: #7dd3fc; font-weight: 700; border-bottom: 2px solid rgba(125,211,252,0.28); padding: 10px 14px; text-align: left; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; } td { padding: 10px 14px; border-bottom: 1px solid rgba(125,211,252,0.12); font-family: 'JetBrains Mono', 'Consolas', monospace; } td:first-child { font-family: 'IBM Plex Sans', sans-serif; } code { background: #0a1426; color: #fcd34d; padding: 2px 10px; border-radius: 6px; font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 20px; border: 1px solid rgba(125,211,252,0.28); } blockquote { border-left: 3px solid #7dd3fc; padding: 10px 16px; color: #cbd5e1; font-style: italic; background: rgba(125,211,252,0.06); border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 21px; } img { border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,0.55); border: 1px solid rgba(125,211,252,0.28); } section::after { color: #7dd3fc; font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 15px; font-weight: 500; background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.2); padding: 4px 12px; border-radius: 6px; bottom: 22px; right: 28px; } .chip { display: inline-block; padding: 6px 14px; border-radius: 999px; background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.22); font-size: 18px; color: #e6eaf2; margin: 4px 6px; } .chip code { background: transparent; border: none; color: #7dd3fc; padding: 0 0 0 6px; font-size: 16px; } footer { color: #64748b; font-size: 14px; font-family: 'IBM Plex Sans', sans-serif; }"
 footer: "Engine Failure & RUL Prediction · RCSSTEAP, Beihang University"
 ---
 
 <!-- _class: lead -->
 <!-- _paginate: false -->
+
+<span class="eyebrow">Final Project · RCSSTEAP · Beihang University</span>
 
 # Engine Failure &
 # Remaining Useful Life
@@ -24,11 +26,9 @@ footer: "Engine Failure & RUL Prediction · RCSSTEAP, Beihang University"
 
 <br>
 
-**Final Project — RCSSTEAP, Beihang University**
-
-*Kodie Amo Kwame · LS2525226*
-*Sumara Alfred Salifu · LS2525245*
-*Peta Mimi Precious · LS2525255*
+<span class="chip">Kodie Amo Kwame <code>LS2525226</code></span>
+<span class="chip">Sumara Alfred Salifu <code>LS2525245</code></span>
+<span class="chip">Peta Mimi Precious <code>LS2525255</code></span>
 
 <!-- note: Jet engines fail. When they do, lives and millions of dollars are at stake. This final project predicts engine failure using physics-informed deep learning on NASA's turbofan dataset. We compare a standard Convolutional Neural Network against a Physics-Informed Neural Network, and show that embedding physical laws into the loss function produces safer, more accurate predictions of remaining useful life. -->
 
@@ -176,18 +176,25 @@ Applied on **adjacent-cycle window pairs** `(t, t+1)`:
 <!-- _class: lead -->
 <!-- _paginate: false -->
 
+<span class="eyebrow">Conclusion</span>
+
 # Physics-Informed Learning
 # = Safer, More Accurate RUL
 
 <br>
 
-### Key takeaway
-*A small network with the right prior beats a larger network with none.*
+### *A small network with the right prior beats a larger network with none.*
 
-<br><br>
+<br>
 
 **Thank you**
-*Kodie Amo Kwame · Sumara Alfred Salifu · Peta Mimi Precious*
-RCSSTEAP, Beihang University · Final Project
+
+<span class="chip">Kodie Amo Kwame</span>
+<span class="chip">Sumara Alfred Salifu</span>
+<span class="chip">Peta Mimi Precious</span>
+
+<br>
+
+*RCSSTEAP · Beihang University · Final Project*
 
 <!-- note: The key takeaway: a small network with the right physical prior beats a larger network with none. Physics-informed learning cut Root Mean Square Error by over twenty percent, and the asymmetric N A S A score by nearly seventy percent — turning a compact neural network into a safer, more accurate estimator for condition-based engine maintenance. Thank you. -->
