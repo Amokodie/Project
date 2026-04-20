@@ -283,10 +283,12 @@ def section_downloads(
                 "`assets/PHM08_Damage_Propagation_Modeling.pdf` to enable a second download."
             )
     with c4:
-        st.caption(
-            "The brief PDF is generated in-app from your loaded tables and cites Saxena et al. PHM08. "
-            "The NASA text bundle does not ship a PDF."
+        st.link_button(
+            "Open live presentation ↗",
+            "https://scientific360.github.io/Remaining-Useful-Life-of-Aircraft-Engine/video/engine_rul_presentation.html",
+            use_container_width=True,
         )
+        st.caption("Opens the HTML presentation hosted on GitHub Pages in a new tab.")
 
 
 def tab_fleet_overview(df: pd.DataFrame, data_caption: str, tpl: str):
@@ -754,11 +756,25 @@ REFERENCE_PDF = os.path.join(_HERE, "Physics_Informed_AI.pdf")
 REFERENCE_VIDEO = os.path.join(_HERE, "Predicting_Failure.mp4")
 
 
+PRESENTATION_URL = "https://scientific360.github.io/Remaining-Useful-Life-of-Aircraft-Engine/video/engine_rul_presentation.html"
+
+
 def tab_references():
     st.subheader("Reference materials")
     st.markdown(
         "Background reading and a short explainer video for the PINN / RUL story used in this dashboard. "
         "Both files live next to `app.py` — replace them with newer copies and the tab updates automatically."
+    )
+
+    st.markdown("#### Live HTML presentation")
+    st.markdown(
+        f"[Open the engine RUL presentation ↗]({PRESENTATION_URL})  \n"
+        f"Hosted on GitHub Pages — opens in a new tab."
+    )
+    st.link_button(
+        "Open presentation in new tab",
+        PRESENTATION_URL,
+        use_container_width=True,
     )
 
     st.markdown("#### Physics-Informed AI (PDF)")
